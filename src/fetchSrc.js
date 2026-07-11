@@ -2,286 +2,313 @@ import observer from "@cocreate/observer";
 import { getRelativePath, ObjectId } from "@cocreate/utils";
 
 const selector =
-	"[src]:not(img, video, audio, script, input, iframe, frame, link, source), [source], [stream]";
-const textExtensions = ['html','htm','xhtml','css','js','mjs','cjs','json','jsonc','json5','xml','xsd','xsl','xslt','svg','md','markdown','scss','sass','less','vue','jsx','tsx','graphql','gql','htc','webmanifest','txt','csv','tsv','yaml','yml','toml','ini','log','dat','env','c','cc','cpp','cxx','h','hh','hpp','hxx','m','mm','cs','java','jsp','properties','py','pyc','pyd','pyo','rb','erb','php','phtml','php3','php4','php5','php7','phps','go','rs','swift','kt','kts','ts','pl','pm','pod','sh','bash','zsh','ksh','csh','tcsh','ps1','psm1','psd1','bat','cmd','sql','r','Rprofile','Rmd','lua','hs','lhs','erl','hrl','scala','sbt','d','f','for','f77','f90','f95','f03','f08','adb','ads','cbl','cob','cpy','lisp','lsp','scm','ss','pro','plg','vb','vbs','dart','asm','s','conf','cfg','config','ini','env','npmrc','yarnrc','gitattributes','gitignore','gitmodules','gitkeep','editorconfig','prettierrc','eslintrc','eslintignore','browserslistrc','package.json','package-lock.json','tsconfig.json','babelrc','vite.config.js','rollup.config.js','webpack.config.js','procfile','dockerfile','dockerignore','makefile','gradle','groovy','pom','properties','service','target','rst','adoc','asciidoc','tex','latex','textile','org','wiki','nfo','rtf','gcode','patch','diff','log','reg','map','sub','srt','dic','wml','rss','atom','gpx','kml','kmz','vcf','vcard','ics','ical','ps','eps','mf','lic','license','pem','key','crt','cert','pub','tpl','liquid','mustache','hbs','twig','blade.php','ejs','coffee','litcoffee','jl','nim','zig','wgsl']; const initializing = new Map();
+    "[src]:not(img, video, audio, script, input, iframe, frame, link, source), [source], [stream]";
+
+const initializing = new WeakMap();
+
+/**
+ * Validates whether a given URL string points to the current origin.
+ * Relative paths (e.g., "/partial.html") resolve to the same origin.
+ * @param {string} urlStr - The URL to validate
+ * @returns {boolean} True if safe/same-origin, false otherwise
+ */
+function isSameOrigin(urlStr) {
+    try {
+        // Resolve the URL against the current document's origin.
+        const url = new URL(urlStr, window.location.origin);
+        return url.origin === window.location.origin;
+    } catch (err) {
+        console.error("Invalid URL format:", urlStr, err);
+        return false;
+    }
+}
 
 function init(elements) {
-	if (elements && !Array.isArray(elements)) elements = [elements];
+    if (elements && !Array.isArray(elements)) elements = [elements];
 
-	if (!elements) elements = document.querySelectorAll(selector);
+    if (!elements) elements = document.querySelectorAll(selector);
 
-	initElements(elements);
+    initElements(elements);
 }
 
 async function initElements(elements) {
-	for (let element of elements) {
-		let src =
-			element.getAttribute("src") ||
-			element.getAttribute("source") ||
-			element.getAttribute("stream");
+    for (let element of elements) {
+        let src =
+            element.getAttribute("src") ||
+            element.getAttribute("source") ||
+            element.getAttribute("stream");
 
-		if (!src || /{{\s*([\w\W]+)\s*}}/g.test(src)) continue;
+        if (!src || /{{\s*([\w\W]+)\s*}}/g.test(src)) continue;
 
-		let initialize = initializing.get(element);
-		if (initialize && initialize.src === src) continue;
+        let initialize = initializing.get(element);
+        if (initialize && initialize.src === src) continue;
 
-		initializing.set(element, { src });
-		try {
-			let state = localStorage.getItem("state"); // Assume this is your state object
-			let response = await fetch(src, {
-				headers: {
-					"X-State": state // Custom header to send state
-				}
-			});
+        initializing.set(element, { src });
+        try {
+            // --- SECURITY FIX: Conditional Sensitive Headers ---
+            // Only attach the local state header if fetching from the same origin.
+            let headers = {};
+            if (isSameOrigin(src)) {
+                let state = localStorage.getItem("state");
+                if (state) {
+                    headers["X-State"] = state;
+                }
+            }
 
-			if (element.tagName === "AUDIO" || element.tagName === "VIDEO") {
-				initMediaSource(element, src);
-			} else {
-				if (src && !textExtensions.includes(src.split('.').pop())) continue
+            let response = await fetch(src, { headers });
 
-				if (element.hasAttribute("rendered")) {
-					element.removeAttribute("rendered");
-					// continue;
-				}
-				let text = await response.text();
-				if (text) {
-					let path = "";
-					let pathElement = element.closest("[path]");
-					if (pathElement) {
-						path =
-							pathElement.getAttribute("path") ||
-							getRelativePath();
-					} else {
-						path = getRelativePath();
-					}
-					// Replace $relativePath in the fetched text
-					if (path) {
-						text = text.replaceAll(/\$relativePath\/?/g, path);
-					}
-					// Replace ObjectId() with a new ObjectId
-					text = text.replaceAll("ObjectId()", () => {
-						// Generate a NEW ObjectId inside the function
-						return ObjectId().toString(); // Return its string representation
-					});
-					element.setValue(text);
-				}
-			}
-		} catch (err) {
-			console.log("FetchSrc error:" + err);
-		}
-	}
+            if (response.status === 404 || response.status === 403) {
+                element.setAttribute("error", response.status);
+                continue;
+            }
+
+            if (element.tagName === "AUDIO" || element.tagName === "VIDEO") {
+                // Media streams can safely load cross-origin without risk of DOM-based XSS
+                initMediaSource(element, src);
+            } else {
+                // --- SECURITY FIX: Cross-Origin HTML Injection Prevention ---
+                // Only allow rendering the fetched response directly into the HTML tree if same-origin.
+                if (!isSameOrigin(src)) {
+                    console.warn(`[CoCreateSrc] Blocked inserting fetched text into HTML from cross-origin: ${src}`);
+                    element.setAttribute("error", "403-forbidden-cross-origin-html");
+                    continue;
+                }
+
+                if (element.hasAttribute("rendered")) {
+                    element.removeAttribute("rendered");
+                }
+                let text = await response.text();
+                if (text) {
+                    let path = "";
+                    let pathElement = element.closest("[path]");
+                    if (pathElement) {
+                        path =
+                            pathElement.getAttribute("path") ||
+                            getRelativePath();
+                    } else {
+                        path = getRelativePath();
+                    }
+                    // Replace $relativePath in the fetched text
+                    if (path) {
+                        text = text.replaceAll(/\$relativePath\/?/g, path);
+                    }
+                    // Replace ObjectId() with a new ObjectId
+                    text = text.replaceAll("ObjectId()", () => {
+                        return ObjectId().toString();
+                    });
+                    element.setValue(text);
+                }
+            }
+        } catch (err) {
+            console.log("FetchSrc error:" + err);
+        }
+    }
 }
 
 async function initMediaSource(element, src) {
-	try {
-		let mediaConfig = await response.json();
-		let sourceBuffer;
+    try {
+        let response = await fetch(src);
+        let mediaConfig = await response.json();
+        let sourceBuffer;
 
-		const mediaSource = new MediaSource();
-		element.src = URL.createObjectURL(mediaSource);
-		mediaSource.addEventListener("sourceopen", async () => {
-			sourceBuffer = mediaSource.addSourceBuffer(
-				`${mediaConfig["content-type"]}; codecs="${mediaConfig.codecs}"`
-			);
+        const mediaSource = new MediaSource();
+        element.src = URL.createObjectURL(mediaSource);
+        mediaSource.addEventListener("sourceopen", async () => {
+            sourceBuffer = mediaSource.addSourceBuffer(
+                `${mediaConfig["content-type"]}; codecs="${mediaConfig.codecs}"`
+            );
 
-			sourceBuffer.addEventListener("updateend", () => {
-				console.log(
-					"Update ended, buffered ranges:",
-					sourceBuffer.buffered
-				);
-				if (
-					!sourceBuffer.updating &&
-					mediaSource.readyState === "open"
-				) {
-					mediaSource.endOfStream();
+            sourceBuffer.addEventListener("updateend", () => {
+                console.log(
+                    "Update ended, buffered ranges:",
+                    sourceBuffer.buffered
+                );
+                if (
+                    !sourceBuffer.updating &&
+                    mediaSource.readyState === "open"
+                ) {
+                    mediaSource.endOfStream();
 
-					element.addEventListener("ended", () => {
-						URL.revokeObjectURL(element.src);
-					});
-				}
-			});
+                    element.addEventListener("ended", () => {
+                        URL.revokeObjectURL(element.src);
+                    });
+                }
+            });
 
-			sourceBuffer.addEventListener("error", (e) => {
-				console.error("SourceBuffer error event:", e);
-				console.log("MediaSource readyState:", mediaSource.readyState);
-				console.log("SourceBuffer updating:", sourceBuffer.updating);
-				console.log(
-					"SourceBuffer buffered ranges:",
-					sourceBuffer.buffered
-				);
-				// Any other state information you can log
-			});
+            sourceBuffer.addEventListener("error", (e) => {
+                console.error("SourceBuffer error event:", e);
+                console.log("MediaSource readyState:", mediaSource.readyState);
+                console.log("SourceBuffer updating:", sourceBuffer.updating);
+                console.log(
+                    "SourceBuffer buffered ranges:",
+                    sourceBuffer.buffered
+                );
+            });
 
-			getSegment(sourceBuffer, mediaConfig.segments[0]);
-		});
+            getSegment(sourceBuffer, mediaConfig.segments[0]);
+        });
 
-		mediaSource.addEventListener("sourceended", () => {
-			console.log("MediaSource ended event fired");
-		});
+        mediaSource.addEventListener("sourceended", () => {
+            console.log("MediaSource ended event fired");
+        });
 
-		mediaSource.addEventListener("sourceclose", () => {
-			console.log("MediaSource close event fired");
-		});
+        mediaSource.addEventListener("sourceclose", () => {
+            console.log("MediaSource close event fired");
+        });
 
-		// Event listener for seeking
-		element.addEventListener("seeking", () => {
-			let currentTime = element.currentTime;
-			let chunkIndex = Math.floor(currentTime / chunkDuration);
-		});
+        // Event listener for seeking
+        element.addEventListener("seeking", () => {
+            let currentTime = element.currentTime;
+            let chunkIndex = Math.floor(currentTime / chunkDuration);
+        });
 
-		// Event listener for seeked
-		element.addEventListener("seeked", () => {
-			let currentTime = element.currentTime;
-			if (isBuffered(element, currentTime)) return;
+        // Event listener for seeked
+        element.addEventListener("seeked", () => {
+            let currentTime = element.currentTime;
+            if (isBuffered(element, currentTime)) return;
 
-			let query = {
-				start: { $lte: currentTime },
-				end: { $gte: currentTime }
-			};
+            let query = {
+                start: { $lte: currentTime },
+                end: { $gte: currentTime }
+            };
 
-			let segments = queryData(mediaConfig.segments, query);
-			for (let segment of segments) {
-				getSegment(sourceBuffer, segment);
-			}
-		});
+            let segments = queryData(mediaConfig.segments, query);
+            for (let segment of segments) {
+                getSegment(sourceBuffer, segment);
+            }
+        });
 
-		element.addEventListener("timeupdate", function () {
-			const bufferEnd = element.buffered.end(0);
-			const currentTime = element.currentTime;
-			const threshold = 10; // seconds before buffer end to fetch the next segment
+        element.addEventListener("timeupdate", function () {
+            const bufferEnd = element.buffered.end(0);
+            const currentTime = element.currentTime;
+            const threshold = 10;
 
-			if (bufferEnd - currentTime < threshold) {
-				// Time to fetch the next segment
-				getSegment(sourceBuffer, mediaConfig);
-			}
-		});
-	} catch (error) {
-		element.src = src;
-		// let blob = await response.json();
-		// URL.createObjectURL(blob);
-	}
+            if (bufferEnd - currentTime < threshold) {
+                getSegment(sourceBuffer, mediaConfig);
+            }
+        });
+    } catch (error) {
+        element.src = src;
+    }
 }
 
 async function getSegment(sourceBuffer, segment) {
-	// TODO: use socket/crud/file with room using the url to get one or more segments and append
-	let segments = [];
-	let data;
-	if (segment.array && segment.object) {
-		data = { method: "object.read", ...segment };
-		data = await crud.send(data);
-		if (segment.key) {
-			// TODO: utils.getValuefromObject
-			if (Array.isArray(data.object[0][key]))
-				segments.push(...data.object[0][key]);
-			else segments.push(data.object[0][key]);
-		} else segments.push(...data.object);
-		segment.src = segments[0];
-		segment.src = await segment.src.text();
-		// TODO: handle segment array as
-	} else if (segment.src) {
-		// TODO: handle 404, or whether src was fetched or not
-		segment.src = await fetch(segment.src);
-		segment.src = await segment.src.text();
-	}
+    let segments = [];
+    let data;
+    if (segment.array && segment.object) {
+        data = { method: "object.read", ...segment };
+        data = await crud.send(data);
+        if (segment.key) {
+            if (Array.isArray(data.object[0][key]))
+                segments.push(...data.object[0][key]);
+            else segments.push(data.object[0][key]);
+        } else segments.push(...data.object);
+        segment.src = segments[0];
+        segment.src = await segment.src.text();
+    } else if (segment.src) {
+        // Media segments are safe to fetch cross-origin as they're not processed as HTML
+        let response = await fetch(segment.src);
+        if (response.status === 404 || response.status === 403) {
+            console.warn(`Segment fetch failed with status: ${response.status}`);
+            return;
+        }
+        segment.src = await response.text();
+    }
 
-	appendSegment(sourceBuffer, segment);
+    appendSegment(sourceBuffer, segment);
 }
 
 async function appendSegment(sourceBuffer, segment) {
-	let arrayBuffer = segment.src;
-	if (typeof segment.src === "string") {
-		try {
-			arrayBuffer = base64ToArrayBuffer(segment.src);
-		} catch (e) {
-			console.error("Base64 decode error:", e);
-		}
-	} else if (segment.src instanceof ArrayBuffer) {
-		arrayBuffer = segment.src;
-	} else if (segment.src instanceof Blob) {
-		arrayBuffer = await segment.src.arrayBuffer();
-	} else {
-		arrayBuffer = base64ToArrayBuffer(segment.src);
+    let arrayBuffer = segment.src;
+    if (typeof segment.src === "string") {
+        try {
+            arrayBuffer = base64ToArrayBuffer(segment.src);
+        } catch (e) {
+            console.error("Base64 decode error:", e);
+        }
+    } else if (segment.src instanceof ArrayBuffer) {
+        arrayBuffer = segment.src;
+    } else if (segment.src instanceof Blob) {
+        arrayBuffer = await segment.src.arrayBuffer();
+    } else {
+        arrayBuffer = base64ToArrayBuffer(segment.src);
+    }
 
-		// arrayBuffer = await segment.src.arrayBuffer();
-	}
+    if (sourceBuffer.updating)
+        await new Promise((resolve) =>
+            sourceBuffer.addEventListener("updateend", resolve, { once: true })
+        );
 
-	// Wait for the source buffer to be ready for updates
-	if (sourceBuffer.updating)
-		await new Promise((resolve) =>
-			sourceBuffer.addEventListener("updateend", resolve, { once: true })
-		);
-
-	sourceBuffer.appendBuffer(arrayBuffer);
-	console.log(sourceBuffer);
+    sourceBuffer.appendBuffer(arrayBuffer);
+    console.log(sourceBuffer);
 }
 
 function isBuffered(element, currentTime) {
-	for (let i = 0; i < element.buffered.length; i++) {
-		if (
-			currentTime >= element.buffered.start(i) &&
-			currentTime <= element.buffered.end(i)
-		) {
-			return true; // The currentTime is within a buffered range
-		}
-	}
-	return false; // The currentTime is not buffered
+    for (let i = 0; i < element.buffered.length; i++) {
+        if (
+            currentTime >= element.buffered.start(i) &&
+            currentTime <= element.buffered.end(i)
+        ) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function base64ToBlob(base64, contentType = "") {
-	const binaryString = atob(base64.split(",")[1]);
-	const len = binaryString.length;
-	const uint8Array = new Uint8Array(len);
-	for (let i = 0; i < len; i++) {
-		uint8Array[i] = binaryString.charCodeAt(i);
-	}
-	return new Blob([uint8Array], { type: contentType });
+    const binaryString = atob(base64.split(",")[1]);
+    const len = binaryString.length;
+    const uint8Array = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        uint8Array[i] = binaryString.charCodeAt(i);
+    }
+    return new Blob([uint8Array], { type: contentType });
 }
 
 function base64ToArrayBuffer(base64) {
-	const binaryString = window.atob(base64.split(",")[1]); // Decode base64
-	const len = binaryString.length;
-	const bytes = new Uint8Array(len);
-	for (let i = 0; i < len; i++) {
-		bytes[i] = binaryString.charCodeAt(i);
-	}
-	return bytes.buffer; // Return ArrayBuffer
+    const binaryString = window.atob(base64.split(",")[1]);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
 }
 
 observer.init({
-	name: "CoCreateSrc",
-	types: ["addedNodes"],
-	selector: selector,
-	callback: function (mutation) {
-		init(mutation.target);
-	}
+    name: "CoCreateSrc",
+    types: ["addedNodes"],
+    selector: selector,
+    callback: function (mutation) {
+        init(mutation.target);
+    }
 });
 
 observer.init({
-	name: "CoCreateSrcOperator",
-	types: ["addedNodes"],
-	selector: "img",
-	// selector: "img, video, audio, script, input, iframe, frame, link, source",
-	callback: function (mutation) {
-		let src = mutation.target.getAttribute("src");
-		if (src) {
-			mutation.target.setAttribute("src", src);
-		}
-	}
+    name: "CoCreateSrcOperator",
+    types: ["addedNodes"],
+    selector: "img",
+    callback: function (mutation) {
+        let src = mutation.target.getAttribute("src");
+        if (src) {
+            mutation.target.setAttribute("src", src);
+        }
+    }
 });
 
 observer.init({
-	name: "CoCreateSrcAttributes",
-	types: ["attributes"],
-	attributeFilter: ["src"],
-	selector: selector,
-	callback: function (mutation) {
-		if (
-			mutation.oldValue !==
-			mutation.target.getAttribute(mutation.attributeName)
-		) {
-			init(mutation.target);
-		}
-	}
+    name: "CoCreateSrcAttributes",
+    types: ["attributes"],
+    attributeFilter: ["src"],
+    selector: selector,
+    callback: function (mutation) {
+        if (
+            mutation.oldValue !==
+            mutation.target.getAttribute(mutation.attributeName)
+        ) {
+            init(mutation.target);
+        }
+    }
 });
 
 init();
