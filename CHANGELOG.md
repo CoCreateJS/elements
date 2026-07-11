@@ -1,3 +1,14 @@
+## [1.42.10](https://github.com/CoCreate-app/CoCreate-elements/compare/v1.42.9...v1.42.10) (2026-07-11)
+
+
+### Bug Fixes
+
+* bump package versions ([92844e1](https://github.com/CoCreate-app/CoCreate-elements/commit/92844e16c8cbfb3928a9ebdd741f147b848e4cb3))
+* improve error handling and code formatting in fetchSrc.js ([4bc0e82](https://github.com/CoCreate-app/CoCreate-elements/commit/4bc0e8217f77d3c7c53f71c18153109abe2ebb87))
+* insert fetch src only from same origin ([5964a33](https://github.com/CoCreate-app/CoCreate-elements/commit/5964a338eac661fb0326c1b2a2241719ad434b57))
+* removed post install and add add packages to apprved list ([f7c6265](https://github.com/CoCreate-app/CoCreate-elements/commit/f7c62658265a8f5b5a13f20b44a90b5400e747f9))
+* semantic version handling ([c34d6ad](https://github.com/CoCreate-app/CoCreate-elements/commit/c34d6ada6acfba573318e9743cdf91196fb1855f))
+
 ## [1.42.9](https://github.com/CoCreate-app/CoCreate-elements/compare/v1.42.8...v1.42.9) (2026-03-01)
 
 
