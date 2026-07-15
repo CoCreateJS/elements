@@ -38,8 +38,8 @@ import {
 import filter from "@cocreate/filter";
 import { render, renderValue, renderedNodes } from "@cocreate/render";
 import "@cocreate/element-prototype";
-import "./fetchSrc";
-import { reset } from "./form";
+import "./fetchSrc.js";
+import { reset } from "./form.js";
 import "./value.js";
 
 const selector = "[storage], [database], [array], [render-json]";
