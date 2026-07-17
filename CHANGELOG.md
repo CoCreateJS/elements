@@ -1,3 +1,15 @@
+# [1.43.0](https://github.com/CoCreate-app/CoCreate-elements/compare/v1.42.10...v1.43.0) (2026-07-17)
+
+
+### Bug Fixes
+
+* update import statements to include file extensions ([38f073c](https://github.com/CoCreate-app/CoCreate-elements/commit/38f073c45eff68c72eeae63d3c366a8bd7df3e1b))
+
+
+### Features
+
+* update automated workflow and release configuration for improved semantic release handling ([1cbe984](https://github.com/CoCreate-app/CoCreate-elements/commit/1cbe984012f4685ad7a0dbbd7f9ca940e26b9038))
+
 ## [1.42.10](https://github.com/CoCreate-app/CoCreate-elements/compare/v1.42.9...v1.42.10) (2026-07-11)
 
 
