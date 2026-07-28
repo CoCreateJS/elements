@@ -3,10 +3,11 @@ import CRUD from "@cocreate/crud-client";
 import filter from "@cocreate/filter";
 
 import { getAttributes } from "@cocreate/utils";
-import { initDataKey, getData, getDataObject } from "./getDataHandler.js";
+import { initDataKey, getData, getDataObject, unsubscribe } from "./getDataHandler.js";
 import { read, save } from "./crudHandler.js";
 import { setData } from "./setDataHandler.js";
-import { elements, forms, keys, debounce } from "./mapRegistry.js"
+import { elements, forms, keys, debounce } from "./mapRegistry.js";
+import { unsubscribesubscribe } from "./subscriptionHandler.js";
 
 const selector = "[storage], [database], [array], [render-json]";
 
@@ -14,15 +15,7 @@ const selector = "[storage], [database], [array], [render-json]";
  * Initializes elements with specific CRUD attributes. If no parameter is provided, it queries and initializes all elements
  * that have certain CRUD-related attributes. It can also initialize a single element or an array of elements.
  *
- * Attributes used for initialization are:
- * - storage: Specifies the storage mechanism.
- * - database: Indicates the database to interact with.
- * - array: Defines the array to be used.
- * - render-json: Determines how JSON data is rendered.
- *
- * @param {(Element|Element[])} [elements] - Optional. A single element or an array of elements to initialize.
- * If omitted, the function queries and initializes all elements containing
- * any of these CRUD attributes: "storage", "database", "array", "render-json".
+ * @param {(Element|Element[])} [element] - Optional. A single element or an array of elements to initialize.
  */
 export async function init(element) {
     if (
@@ -66,12 +59,21 @@ export async function init(element) {
 
     if (dataObjects && dataObjects.size > 0) {
         for (let key of dataObjects.keys()) {
-            let { data, elements: mappedElements } = keys.get(key);
-            read(Array.from(mappedElements.keys()), data, { string: key });
+            let keyEntry = keys.get(key);
+            if (keyEntry) {
+                let { data, elements: mappedElements } = keyEntry;
+                read(Array.from(mappedElements.keys()), data, { string: key });
+            }
         }
     }
 }
 
+/**
+ * Prepares a single element for CRUD synchronization, attaching event listeners and filters.
+ *
+ * @param {Element} el 
+ * @returns {Promise<Object|undefined>}
+ */
 export async function initElement(el) {
     let data = getDataObject(el);
     if (!data || !data.type) return;
@@ -96,7 +98,6 @@ export async function initElement(el) {
                 el.contenteditable || el.value !== undefined || el.hasAttribute("value")
             ) {
                 if (el.tagName == "IFRAME") {
-                    // ToDo: saving on contenteditable elements when an objectId does not exist in order to crud or crdt
                     el = el.contentDocument.documentElement;
                     el.setAttribute("contenteditable", "true");
                 }
@@ -135,6 +136,12 @@ export async function initElement(el) {
     return data;
 }
 
+/**
+ * Removes elements from tracking maps and dispatches an unsubscription socket event
+ * when no remaining elements watch a specific dataKey scope.
+ * 
+ * @param {Element|Element[]} element - Element(s) being unmounted or cleaned up
+ */
 export async function remove(element) {
     if (
         element &&
@@ -142,48 +149,80 @@ export async function remove(element) {
         !Array.isArray(element)
     )
         element = [element];
+
     for (let i = 0; i < element.length; i++) {
-        delete element[i].hasRead;
-        if (element[i].tagName === "FORM") {
-            let form = forms.get(element[i]);
+        const el = element[i];
+        delete el.hasRead;
+
+        if (el.tagName === "FORM") {
+            let form = forms.get(el);
             if (!form) return;
 
             form = form.elements;
-            for (let el of form.keys()) {
-                let key = elements.get(el);
+            for (let formEl of form.keys()) {
+                let key = elements.get(formEl);
                 if (key) {
-                    keys.get(key).elements.delete(el);
-                    elements.delete(el);
-                    // debounce.delete(key)
+                    let keyEntry = keys.get(key);
+                    if (keyEntry) {
+                        keyEntry.elements.delete(formEl);
+                        if (!keyEntry.elements.size) {
+                            // Last element watching this key was removed -> trigger socket unsubscribe
+                            unsubscribe(keyEntry.dataKey, keyEntry.data);
+                            keys.delete(key);
+                        }
+                    }
+                    elements.delete(formEl);
                 }
             }
-            let key = elements.get(element[i]);
-            if (key) {
-                keys.get(key).elements.delete(element[i]);
-                if (!keys.get(key).elements.size) keys.delete(key);
-            }
-            elements.delete(element[i]);
-            forms.delete(element[i]);
-        } else {
-            let key = elements.get(element[i]);
-            if (key) {
-                if (element[i].getFilter) filter.filters.delete(element[i]);
-                keys.get(key).elements.delete(element[i]);
-                elements.delete(element[i]);
-                if (!keys.get(key).elements.size) keys.delete(key);
 
-                // debounce.delete(key)
-                let form = element[i].closest("form");
+            let key = elements.get(el);
+            if (key) {
+                let keyEntry = keys.get(key);
+                if (keyEntry) {
+                    keyEntry.elements.delete(el);
+                    if (!keyEntry.elements.size) {
+                        unsubscribe(keyEntry.dataKey, keyEntry.data);
+                        keys.delete(key);
+                    }
+                }
+            }
+            elements.delete(el);
+            forms.delete(el);
+        } else {
+            let key = elements.get(el);
+            if (key) {
+                if (el.getFilter) filter.filters.delete(el);
+
+                let keyEntry = keys.get(key);
+                if (keyEntry) {
+                    keyEntry.elements.delete(el);
+                    elements.delete(el);
+
+                    if (!keyEntry.elements.size) {
+                        // Last element watching this key was removed -> trigger socket unsubscribe
+                        unsubscribe(keyEntry.dataKey, keyEntry.data);
+                        keys.delete(key);
+                    }
+                } else {
+                    elements.delete(el);
+                }
+
+                let form = el.closest("form");
                 form = forms.get(form);
                 if (form) {
-                    form.elements.delete(element[i]);
+                    form.elements.delete(el);
                     if (!form.elements.size) forms.delete(form);
                 }
-            } else elements.delete(element[i]);
+            } else {
+                elements.delete(el);
+            }
         }
     }
 }
 
+/**
+ * Initializes global CRUD socket response listeners.
+ */
 export function initSocket() {
     const type = ["storage", "database", "array", "index", "object", "filter"];
     const method = ["create", "update", "delete"];
@@ -241,7 +280,6 @@ Observer.init({
         "object",
         "key"
     ],
-    // target: selector, // blocks mutations when applied
     callback: function (mutation) {
         let currentValue = mutation.target.getAttribute(mutation.attributeName);
         if (currentValue !== mutation.oldValue) {
@@ -254,4 +292,4 @@ Observer.init({
 
 init();
 
-export default { init, initElement, initSocket }
+export default { init, initElement, initSocket, remove };
