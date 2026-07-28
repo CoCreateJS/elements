@@ -3,11 +3,11 @@ import CRUD from "@cocreate/crud-client";
 import filter from "@cocreate/filter";
 
 import { getAttributes } from "@cocreate/utils";
-import { initDataKey, getData, getDataObject, unsubscribe } from "./getDataHandler.js";
+import { initDataKey, getData, getDataObject } from "./getDataHandler.js";
 import { read, save } from "./crudHandler.js";
 import { setData } from "./setDataHandler.js";
 import { elements, forms, keys, debounce } from "./mapRegistry.js";
-import { unsubscribesubscribe } from "./subscriptionHandler.js";
+import { unsubscribe} from "./subscribeHandler.js";
 
 const selector = "[storage], [database], [array], [render-json]";
 

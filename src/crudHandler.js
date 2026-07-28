@@ -9,7 +9,7 @@ import CRUD from "@cocreate/crud-client";
 import { elements, keys, debounce } from "./mapRegistry.js";
 import { getDataObject } from "./getDataHandler.js";
 import { setData } from "./setDataHandler.js";
-import { deriveSubscriptionKeys } from "./subscribe.js";
+import { deriveSubscriptionKeys } from "./subscribeHandler.js";
 
 /**
  * Reads data for one or more elements based on their dataKey scope.

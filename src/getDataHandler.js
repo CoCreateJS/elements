@@ -4,7 +4,7 @@ import {
 } from "@cocreate/utils";
 
 import { elements, forms, keys } from "./mapRegistry.js";
-import { subscribe } from "./subscriptionHandler.js";
+import { subscribe } from "./subscribeHandler.js";
 
 /**
  * Parses and normalizes HTML attributes from an element into a canonical CRUD data object.
