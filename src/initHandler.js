@@ -252,49 +252,6 @@ Observer.init({
     }
 });
 
-Observer.init({
-    name: "CoCreateElementsChildList",
-    types: ["addedNodes"],
-    selector: selector,
-    callback: function (mutation) {
-        init([mutation.target]);
-    }
-});
-
-Observer.init({
-    name: "CoCreateElementsRemovedNodes",
-    types: ["removedNodes"],
-    selector: selector,
-    callback: function (mutation) {
-        if (mutation.target.hasAttribute("render-clone")) return;
-        remove(mutation.target);
-    }
-});
-
-Observer.init({
-    name: "CoCreateElementsAttributes",
-    types: ["attributes"],
-    attributeFilter: [
-        "organization_id",
-        "host",
-        "storage",
-        "database",
-        "array",
-        "index",
-        "object",
-        "key"
-    ],
-    // target: selector, // blocks mutations when applied
-    callback: function (mutation) {
-        let currentValue = mutation.target.getAttribute(mutation.attributeName);
-        if (currentValue !== mutation.oldValue) {
-            if (mutation.target.tagName === "FORM") return;
-            remove(mutation.target);
-            init([mutation.target]);
-        }
-    }
-});
-
 init();
 
 export default { init, initElement, initSocket }
