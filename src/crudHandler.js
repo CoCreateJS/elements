@@ -180,7 +180,7 @@ export async function save(element, action) {
                 (data[i].type !== "object" &&
                     data[i].method.endsWith(".update")))
         ) {
-            setTypeValue(element, data[i], action);
+            setDataType(element, data[i], action);
         } else if (data[i]) {
             if (action) {
                 action.element.dispatchEvent(
