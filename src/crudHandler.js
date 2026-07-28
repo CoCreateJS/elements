@@ -6,8 +6,18 @@ import {
 import Actions from "@cocreate/actions";
 import CRUD from "@cocreate/crud-client";
 
-import { elements, keys, debounce} from "./mapRegistry.js"
+import { elements, keys, debounce } from "./mapRegistry.js";
+import { getDataObject } from "./getDataHandler.js";
+import { setData } from "./setDataHandler.js";
+import { deriveSubscriptionKeys } from "./subscribe.js";
 
+/**
+ * Reads data for one or more elements based on their dataKey scope.
+ * 
+ * @param {Element|Element[]} element - Element(s) to read data for
+ * @param {Object} [data] - CRUD payload override
+ * @param {Object} [dataKey] - Data key reference
+ */
 export async function read(element, data, dataKey) {
     if (!dataKey) dataKey = { string: elements.get(element) };
     if (!data) {
@@ -45,7 +55,6 @@ export async function read(element, data, dataKey) {
 
     clearTimeout(delay.timer);
     delay.timer = setTimeout(function () {
-        // TODO: should server support string and string array for type object, methods create, read, delete
         if (!data.$filter && data.type === "object") {
             if (!data.object) return;
             else if (typeof data.object === "string")
@@ -54,8 +63,6 @@ export async function read(element, data, dataKey) {
                 if (data.object.length)
                     data.object = { _id: data.object[0]._id };
             } else if (!data.object._id.match(/^[0-9a-fA-F]{24}$/)) return;
-            // if (data.object._id.startsWith('$'))
-            //     return
         }
 
         data.method = data.type + ".read";
@@ -72,11 +79,21 @@ export async function read(element, data, dataKey) {
     }, 500);
 }
 
+/**
+ * Persists modifications for a single element or a form container to the database.
+ * Derives and attaches subscriptionKeys (both document-specific and list-scoped)
+ * prior to dispatching via CRUD.send().
+ * 
+ * @param {Element} element - Input element or FORM instance
+ * @param {Object} [action] - Action metadata object
+ * @returns {Promise<Object[]>}
+ */
 export async function save(element, action) {
     if (!element) return;
     let data, value, form;
     let upsert = element.getAttribute("upsert");
     if (upsert && upsert !== "false") upsert = true;
+
     if (element.tagName === "FORM") {
         data = await element.getData();
     } else {
@@ -115,9 +132,7 @@ export async function save(element, action) {
             } else if (update) {
                 value = data.key.replace(/\[.*?\]/, "[" + value + "]");
                 data.updateKey[key] = value;
-                data[data.type][key] = { $update: value }; // $update is string use the value as the key name
-
-                // data[data.type][key] = { $update: {[value]: value} } // $update is an object use the key as the value to use for the new key
+                data[data.type][key] = { $update: value };
             }
         }
 
@@ -129,16 +144,14 @@ export async function save(element, action) {
         if (data[i].type === "object") {
             let hasId = false;
 
-            // 1. Check your three scenarios just like before
             if (typeof data[i].object === "string") {
-                hasId = !!data[i]._id; 
+                hasId = !!data[i]._id || !!data[i].object;
             } else if (Array.isArray(data[i].object)) {
                 hasId = !!data[i].object[0]?._id;
             } else if (typeof data[i].object === "object" && data[i].object !== null) {
                 hasId = !!data[i].object?._id;
             }
 
-            // 2. Apply the method based on what we found
             if (!data[i].object || !hasId) {
                 data[i].method = "object.create";
             } else {
@@ -159,8 +172,7 @@ export async function save(element, action) {
             data[i].method.endsWith(".update") &&
             data[i].type == "object" &&
             typeof value == "string" &&
-            window.CoCreate.crdt &&
-            !"crdt"
+            window.CoCreate?.crdt
         ) {
             return window.CoCreate.crdt.replaceText({
                 array: data[i].array,
@@ -169,6 +181,9 @@ export async function save(element, action) {
                 value
             });
         }
+
+        // Derive and attach subscriptionKeys array (contains specific document key and list key)
+        data[i].subscriptionKeys = deriveSubscriptionKeys(data[i]);
 
         data[i] = await CRUD.send(data[i]);
 
@@ -206,15 +221,13 @@ Actions.init([
         name: "save",
         endEvent: "saved",
         callback: (action) => {
-            if ((action.form, action)) save(action.form, action);
+            if (action.form || action) save(action.form, action);
         }
     },
     {
         name: "delete",
         endEvent: "deleted",
         callback: async (action) => {
-            // TODO: use selector to target elements for deletion if element is apart of render get render get rendering element for more crud detils
-            // this way any selector can be used to target crud deletions not just .selected
             let elements = [];
             if (action.element.hasAttribute("delete-query")) {
                 elements = queryElements({
@@ -252,6 +265,9 @@ Actions.init([
                 )
                     data[data.type] = { _id: data[data.type] };
 
+                // Attach subscriptionKeys before sending delete payload
+                data.subscriptionKeys = deriveSubscriptionKeys(data);
+
                 let response = await CRUD.send(data);
                 action.element.dispatchEvent(
                     new CustomEvent("deleted", {
@@ -263,4 +279,4 @@ Actions.init([
     }
 ]);
 
-export default { read, save }
+export default { read, save };
