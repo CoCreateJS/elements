@@ -21,6 +21,9 @@
  * you must obtain a commercial license from CoCreate LLC.
  * For details, visit <https://cocreate.app/licenses/> or contact us at sales@cocreate.app.
  */
+import {
+    getAttributes
+} from "@cocreate/utils";
 import { init, initElement, initSocket } from "./initHandler.js";
 import { initDataKey, getDataKey, getDataElements, getDataKeys, getData, getDataObject } from "./getDataHandler.js";
 import { read, save } from "./crudHandler.js";
