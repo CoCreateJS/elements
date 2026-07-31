@@ -1,5 +1,6 @@
 import { dotNotationToObject } from "@cocreate/utils";
 import CRUD from "@cocreate/crud-client";
+import Observer from "@cocreate/observer";
 import { render, renderValue, renderedNodes } from "@cocreate/render";
 import { elements, keys, debounce } from "./mapRegistry.js"
 
