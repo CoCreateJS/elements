@@ -2,7 +2,7 @@ import socket from "@cocreate/socket-client";
 
 /**
  * Canonical scope attributes included in socket server subscription channel keys.
- * Excludes field-level "key" and "$filter" so document and collection channels remain cohesive.
+ * Excludes field-level "key" and "filter" so document and collection channels remain cohesive.
  */
 const SUBSCRIPTION_ATTRIBUTES = [
     "host",

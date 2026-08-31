@@ -133,7 +133,7 @@ export function getDataKey(data) {
         "object",
         "key",
         "updateKey",
-        "$filter",
+        "filter",
         "upsert",
         "namespace",
         "room",
@@ -200,7 +200,7 @@ export function getDataKeys(data) {
         "array",
         "index",
         "object",
-        "$filter"
+        "filter"
     ];
 
     for (const [keyString, sortedKey] of keys.entries()) {
@@ -208,8 +208,8 @@ export function getDataKeys(data) {
 
         for (const key of targetKeys) {
             if (
-                !data.$filter &&
-                key === "$filter" &&
+                !data.filter &&
+                key === "filter" &&
                 sortedKey.data.hasOwnProperty(key)
             ) {
                 hasMatch = true;
@@ -223,7 +223,7 @@ export function getDataKeys(data) {
                 // specific object. Creates and updates contain the affected
                 // object(s), so their object shape will not match the empty
                 // object scope used when the filtered element was registered.
-                if (key === "object" && sortedKey.data.$filter) continue;
+                if (key === "object" && sortedKey.data.filter) continue;
 
                 if (
                     Array.isArray(sortedKey.data[key]) &&
@@ -274,7 +274,7 @@ function formatPayload(payload, value, element) {
                     } else payload.object = { ...payload.object, ...value };
                 } else payload.object[payload.key] = value;
             }
-            if (payload.isUpsert && payload.$filter)
+            if (payload.isUpsert && payload.filter)
                 payload.method = "object.update";
         } else payload[payload.type] = value;
     } else if (payload[payload.type] && payload.key) {

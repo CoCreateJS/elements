@@ -108,8 +108,8 @@ export async function setData(element, data) {
         type = data.method.split(".")[0];
     } else if (type == "key") type = "object";
 
-    if (data.$filter && data.$filter.query) {
-        let sortedData = sort$in(data[type], data.$filter.query);
+    if (data.filter && data.filter.query) {
+        let sortedData = sort$in(data[type], data.filter.query);
         if (sortedData && sortedData.length) data[type] = sortedData;
     }
 
@@ -251,12 +251,12 @@ async function filterData(element, data, type, key) {
         element.renderValue &&
         data.method &&
         data.method.endsWith(".read") &&
-        data.$filter &&
-        (data.$filter.overwrite || !isRendered)
+        data.filter &&
+        (data.filter.overwrite || !isRendered)
     ) {
         await element.renderValue(data);
     } else if (
-        (data.$filter && data.$filter.loadmore) ||
+        (data.filter && data.filter.loadmore) ||
         (data.method && data.method.endsWith(".read") && isRendered)
     ) {
         await loadMore(element, data, type);
@@ -290,9 +290,9 @@ async function filterData(element, data, type, key) {
         value = data[type][0];
     } else if (data) element.setValue(data);
 
-    if (data.$filter) {
+    if (data.filter) {
         let filterElement = filter.filters.get(element);
-        if (filterElement) filterElement.index = data.$filter.index;
+        if (filterElement) filterElement.index = data.filter.index;
     }
 
     if (!data[type] || !Array.isArray(data[type]) || !data[type].length) return;
@@ -400,24 +400,24 @@ function checkIndex(element, data, localData, newData, type, filter) {
         index = localData.findIndex((obj) => obj.name === newData.name);
     }
 
-    if (!data.$filter) data.$filter = {};
+    if (!data.filter) data.filter = {};
 
     if (data.method.endsWith(".delete")) {
         if (index === -1) return;
-        data.$filter.remove = true;
+        data.filter.remove = true;
         localData.splice(index, 1);
     } else {
         if (data.method.endsWith(".create")) {
             if (index === -1) {
-                data.$filter.create = true;
+                data.filter.create = true;
                 if (filter && filter.sort) newData.isNewData = true;
                 else index = localData.length;
                 localData.push(newData);
             }
         } else {
             if (index === -1) return;
-            data.$filter.update = true;
-            data.$filter.currentIndex = index;
+            data.filter.update = true;
+            data.filter.currentIndex = index;
             localData[index] = dotNotationToObject(newData, localData[index]);
             if (filter && filter.sort) {
                 localData[index].isNewData = true;
@@ -431,9 +431,9 @@ function checkIndex(element, data, localData, newData, type, filter) {
     }
 
     if (index >= 0) {
-        if (data.$filter.currentIndex === index)
-            delete data.$filter.currentIndex;
-        data.$filter.index = index;
+        if (data.filter.currentIndex === index)
+            delete data.filter.currentIndex;
+        data.filter.index = index;
         if (element.renderValue) element.renderValue(data);
         else if (data) element.setValue(localData);
     }

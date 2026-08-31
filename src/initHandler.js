@@ -124,10 +124,10 @@ export async function initElement(el) {
     await filter.init(el);
 
     if (el.getFilter) {
-        data.$filter = await el.getFilter();
+        data.filter = await el.getFilter();
 
         el.setFilter = (filter) => {
-            data.$filter = filter;
+            data.filter = filter;
             el.hasRead = false;
             read(el, data);
         };

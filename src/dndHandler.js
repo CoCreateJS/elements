@@ -70,12 +70,12 @@ async function dndCrudData(element, parent, operator) {
 
 function dndNewData(element, data) {
     let dragData = {};
-    if (data.$filter.query) {
-        dndNewDataUpdate(dragData, data.$filter.query);
+    if (data.filter.query) {
+        dndNewDataUpdate(dragData, data.filter.query);
     }
 
     let sortName, sortDirection;
-    let sort = data.$filter.sort;
+    let sort = data.filter.sort;
     if (sort && sort.length) {
         for (let i = sort.length - 1; i >= 0; i--) {
             if (typeof data[sort.key] === "number") {

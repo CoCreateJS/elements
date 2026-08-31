@@ -27,7 +27,7 @@ export async function read(element, data, dataKey) {
     }
 
     if (!dataKey || !data.type) return;
-    if (!data.$filter && (!data[data.type] || !data[data.type].length)) return;
+    if (!data.filter && (!data[data.type] || !data[data.type].length)) return;
 
     if (!(element instanceof HTMLCollection) && !Array.isArray(element))
         element = [element];
@@ -42,7 +42,7 @@ export async function read(element, data, dataKey) {
         if (
             isRead !== "false" &&
             !el.hasRead &&
-            (!data.$filter || (data.$filter && data.$filter.isFilter !== false))
+            (!data.filter || (data.filter && data.filter.isFilter !== false))
         ) {
             el.hasRead = true;
             delay.elements.set(el, true);
@@ -55,7 +55,7 @@ export async function read(element, data, dataKey) {
 
     clearTimeout(delay.timer);
     delay.timer = setTimeout(function () {
-        if (!data.$filter && data.type === "object") {
+        if (!data.filter && data.type === "object") {
             if (!data.object) return;
             else if (typeof data.object === "string")
                 data.object = { _id: data.object };
