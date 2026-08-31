@@ -7,7 +7,7 @@ import { initDataKey, getData, getDataObject } from "./getDataHandler.js";
 import { read, save } from "./crudHandler.js";
 import { setData } from "./setDataHandler.js";
 import { elements, forms, keys, debounce } from "./mapRegistry.js";
-import { unsubscribe} from "./subscribeHandler.js";
+import { unsubscribe } from "./subscribeHandler.js";
 
 const selector = "[storage], [database], [array], [render-json]";
 

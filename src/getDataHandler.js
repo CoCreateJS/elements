@@ -5,6 +5,9 @@ import {
 
 import { elements, forms, keys } from "./mapRegistry.js";
 import { subscribe } from "./subscribeHandler.js";
+import { read, save } from "./crudHandler.js";
+
+const environment = localStorage.getItem("environment");
 
 /**
  * Parses and normalizes HTML attributes from an element into a canonical CRUD data object.
@@ -59,6 +62,8 @@ export function getDataObject(element) {
  * @returns {{ string: string, object: Object }}
  */
 export function initDataKey(element, data) {
+    if (!data.database && environment) data.database = environment;
+
     const dataKey = getDataKey(data);
 
     if (keys.has(dataKey.string)) {
@@ -113,6 +118,8 @@ export function initDataKey(element, data) {
  */
 export function getDataKey(data) {
     const dataKey = {};
+    if (!data.database && environment) data.database = environment;
+
     const attributes = [
         "host",
         "organization_id",
@@ -211,25 +218,28 @@ export function getDataKeys(data) {
                     hasMatch = false;
                     break;
                 }
+
+                // Filtered object elements watch a collection query, not one
+                // specific object. Creates and updates contain the affected
+                // object(s), so their object shape will not match the empty
+                // object scope used when the filtered element was registered.
+                if (key === "object" && sortedKey.data.$filter) continue;
+
                 if (
                     Array.isArray(sortedKey.data[key]) &&
                     Array.isArray(data[key])
                 ) {
-                    if (key === "object" && sortedKey.data.$filter) {
-                        hasMatch = true;
-                    } else {
-                        const matches = sortedKey.data[key].some((value) => {
-                            if (key === "object") {
-                                return data[key].some((obj) => obj._id === value._id);
-                            } else {
-                                return data[key].includes(value);
-                            }
-                        });
-
-                        if (!matches) {
-                            hasMatch = false;
-                            break;
+                    const matches = sortedKey.data[key].some((value) => {
+                        if (key === "object") {
+                            return data[key].some((obj) => obj._id === value._id);
+                        } else {
+                            return data[key].includes(value);
                         }
+                    });
+
+                    if (!matches) {
+                        hasMatch = false;
+                        break;
                     }
                 } else if (sortedKey.data[key] !== data[key]) {
                     hasMatch = false;

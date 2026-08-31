@@ -8,7 +8,8 @@ import {
 } from "@cocreate/utils";
 import CRUD from "@cocreate/crud-client";
 import filter from "@cocreate/filter";
-import { elements, forms, keys } from "./mapRegistry.js"
+import { elements, forms, keys } from "./mapRegistry.js";
+import { getDataElements } from "./getDataHandler.js";
 
 export function setDataType(element, data, action) {
     // TODO: if an array name is updated, the attibute array="" needs to be updated.

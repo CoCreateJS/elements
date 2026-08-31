@@ -2,7 +2,8 @@ import { dotNotationToObject } from "@cocreate/utils";
 import CRUD from "@cocreate/crud-client";
 import Observer from "@cocreate/observer";
 import { render, renderValue, renderedNodes } from "@cocreate/render";
-import { elements, keys, debounce } from "./mapRegistry.js"
+import { elements, keys, debounce } from "./mapRegistry.js";
+import { getDataElements, getDataObject } from "./getDataHandler.js";
 
 // TODO: has the potential to work on most of the crud elements specifically if the value is an object or an array
 async function dndCrud(draggedEl, draggedFrom, droppedEl, droppedIn) {
