@@ -9,7 +9,7 @@ import {
 import CRUD from "@cocreate/crud-client";
 import filter from "@cocreate/filter";
 import { elements, forms, keys } from "./mapRegistry.js";
-import { getDataElements } from "./getDataHandler.js";
+import { getDataElements, getDataObject } from "./getDataHandler.js";
 
 export function setDataType(element, data, action) {
     // TODO: if an array name is updated, the attibute array="" needs to be updated.
@@ -332,10 +332,12 @@ async function loadMore(element, data, type, sort) {
 async function checkFilters(element, data, type) {
     let localData;
     if (!element.getData) {
-        // TODO: fix: getObject as this is related to render or form, but filter could exist on an input which does not have getObject
+        // TODO: getDataObject is related to render or form, but filter could exist on an input which does not have getData
         // TODO: generate an object of current element key: value to use with filter. because filter is used object is not defined
-        localData = getObject(element);
-        if (Array.isArray(localData[type])) localData = localData[type][0];
+        localData = getDataObject(element);
+        if (localData && Array.isArray(localData[type])) {
+            localData = localData[type][0];
+        }
     } else localData = await element.getData();
 
     if (!localData) return;

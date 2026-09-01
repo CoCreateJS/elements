@@ -27,7 +27,7 @@ export async function read(element, data, dataKey) {
     }
 
     if (!dataKey || !data.type) return;
-    if (!data.filter && (!data[data.type] || !data[data.type].length)) return;
+    if (!data.filter && !data[data.type]) return;
 
     if (!(element instanceof HTMLCollection) && !Array.isArray(element))
         element = [element];
@@ -55,6 +55,17 @@ export async function read(element, data, dataKey) {
 
     clearTimeout(delay.timer);
     delay.timer = setTimeout(function () {
+        // Detach this batch before sending so reads queued while the request is
+        // in flight cannot mutate (or later delete) the same element map.
+        const els = Array.from(delay.elements?.keys() || []);
+        if (debounce.get(dataKey.string) === delay)
+            debounce.delete(dataKey.string);
+        clearTimeout(delay.timer);
+        delete delay.elements;
+        delete delay.timer;
+
+        if (!els.length) return;
+
         if (!data.filter && data.type === "object") {
             if (!data.object) return;
             else if (typeof data.object === "string")
@@ -67,15 +78,7 @@ export async function read(element, data, dataKey) {
 
         data.method = data.type + ".read";
 
-        CRUD.send(data).then((responseData) => {
-            debounce.delete(dataKey.string);
-            let els = Array.from(delay.elements.keys());
-            clearTimeout(delay.timer);
-            delete delay.elements;
-            delete delay.timer;
-
-            setData(els, responseData);
-        });
+        CRUD.send(data).then((responseData) => setData(els, responseData));
     }, 500);
 }
 
