@@ -226,7 +226,7 @@ Each of these accepts `"false"` to opt out, and most default to enabled.
 | `crdt="true"` | Routes text edits through collaborative merge instead of overwriting |
 | `broadcast="false"` | Suppresses broadcasting the change to other clients |
 | `broadcast-sender="false"` | Suppresses echoing the change back to the sender |
-| `broadcast-browser="false"` | Suppresses propagation to other tabs |
+| `broadcast-client="false"` | Suppresses propagation to other tabs |
 | `form-attributes="false"` | Prevents the element from inheriting its form's scope |
 | `reset` | Controls reset behavior, see [Forms](#forms) |
 | `splice`, `slice`, `update` | Array mutation modes when the key targets an index |

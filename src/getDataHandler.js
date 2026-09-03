@@ -139,7 +139,7 @@ export function getDataKey(data) {
         "room",
         "broadcast",
         "broadcastSender",
-        "broadcastBrowser"
+        "broadcastClient"
     ];
 
     for (const attribute of attributes) {

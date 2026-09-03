@@ -233,9 +233,9 @@ export function initSocket() {
 
             CRUD.listen(action, function (data) {
                 if (
-                    data.resolved &&
+                    !data.updateDB &&
                     data.status === "received" &&
-                    CRUD.socket.clientId === data.clientId
+                    CRUD.socket.frameId === data.frameId
                 )
                     return;
                 if (data.rendered) return;
