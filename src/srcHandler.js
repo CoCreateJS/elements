@@ -40,6 +40,11 @@ async function initElements(elements) {
 
         if (!src || /{{\s*([\w\W]+)\s*}}/g.test(src)) continue;
 
+        if (element.hasAttribute("rendered")) {
+            element.removeAttribute("rendered");
+            continue;
+        }
+
         let initialize = initializing.get(element);
         if (initialize && initialize.src === src) continue;
 
@@ -49,7 +54,7 @@ async function initElements(elements) {
             // Only attach the local state header if fetching from the same origin.
             let headers = {};
             if (isSameOrigin(src)) {
-                let state = localStorage.getItem("state");
+                let state = sessionStorage.getItem("state");
                 if (state) {
                     headers["X-State"] = state;
                 }
@@ -74,9 +79,6 @@ async function initElements(elements) {
                     continue;
                 }
 
-                if (element.hasAttribute("rendered")) {
-                    element.removeAttribute("rendered");
-                }
                 let text = await response.text();
                 if (text) {
                     let path = "";
@@ -306,6 +308,7 @@ observer.init({
             mutation.oldValue !==
             mutation.target.getAttribute(mutation.attributeName)
         ) {
+            mutation.target.removeAttribute("rendered");
             init(mutation.target);
         }
     }
