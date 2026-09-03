@@ -9,7 +9,10 @@ import CRUD from "@cocreate/crud-client";
 import { elements, keys, debounce } from "./mapRegistry.js";
 import { getDataObject } from "./getDataHandler.js";
 import { setData } from "./setDataHandler.js";
-import { deriveSubscriptionKeys } from "./subscribeHandler.js";
+import {
+    deriveSubscriptionKeys,
+    getSubscription
+} from "./subscribeHandler.js";
 
 /**
  * Reads data for one or more elements based on their dataKey scope.
@@ -77,6 +80,8 @@ export async function read(element, data, dataKey) {
         }
 
         data.method = data.type + ".read";
+        const subscription = getSubscription(data);
+        if (subscription) data.subscription = subscription.string;
 
         CRUD.send(data).then((responseData) => setData(els, responseData));
     }, 500);
@@ -186,6 +191,8 @@ export async function save(element, action) {
         }
 
         // Derive and attach subscriptionKeys array (contains specific document key and list key)
+        const subscription = getSubscription(data[i]);
+        if (subscription) data[i].subscription = subscription.string;
         data[i].subscriptionKeys = deriveSubscriptionKeys(data[i]);
 
         data[i] = await CRUD.send(data[i]);
@@ -269,6 +276,9 @@ Actions.init([
                     data[data.type] = { _id: data[data.type] };
 
                 // Attach subscriptionKeys before sending delete payload
+                const subscription = getSubscription(data);
+                if (subscription)
+                    data.subscription = subscription.string;
                 data.subscriptionKeys = deriveSubscriptionKeys(data);
 
                 let response = await CRUD.send(data);

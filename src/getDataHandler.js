@@ -3,8 +3,14 @@ import {
     checkValue
 } from "@cocreate/utils";
 
-import { elements, forms, keys } from "./mapRegistry.js";
-import { subscribe } from "./subscribeHandler.js";
+import {
+    elements,
+    forms,
+    keys,
+    elementSubscriptions,
+    subscriptions
+} from "./mapRegistry.js";
+import { getSubscription } from "./subscribeHandler.js";
 import { read, save } from "./crudHandler.js";
 
 const environment = localStorage.getItem("environment");
@@ -65,6 +71,7 @@ export function initDataKey(element, data) {
     if (!data.database && environment) data.database = environment;
 
     const dataKey = getDataKey(data);
+    const subscription = getSubscription(data);
 
     if (keys.has(dataKey.string)) {
         keys.get(dataKey.string).elements.set(element, "");
@@ -74,7 +81,20 @@ export function initDataKey(element, data) {
             data,
             dataKey
         });
-        subscribe(dataKey, data);
+    }
+
+    if (subscription) {
+        let subscriptionEntry = subscriptions.get(subscription.string);
+        if (subscriptionEntry) {
+            subscriptionEntry.elements.add(element);
+        } else {
+            subscriptionEntry = {
+                elements: new Set([element]),
+                subscription
+            };
+            subscriptions.set(subscription.string, subscriptionEntry);
+        }
+        elementSubscriptions.set(element, subscription.string);
     }
 
     elements.set(element, dataKey.string);

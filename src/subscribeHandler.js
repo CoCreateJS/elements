@@ -5,99 +5,99 @@ import socket from "@cocreate/socket-client";
  * Excludes field-level "key" and "filter" so document and collection channels remain cohesive.
  */
 const SUBSCRIPTION_ATTRIBUTES = [
-    "host",
-    "organization_id",
+    "namespace",
+    "room",
     "storage",
     "database",
     "array",
-    "index",
     "object"
 ];
 
-/**
- * Derives all target subscription channel keys for write operations (create, update, delete).
- * Returns an array containing both the specific document scope key (with ID) 
- * and the generic scope key (without ID) to notify both single-item and list subscribers.
- * 
- * @param {Object} dataKey - Client dataKey or CRUD payload object
- * @returns {string[]} Array of JSON-stringified subscription key channel strings
- */
-export function deriveSubscriptionKeys(dataKey) {
-    if (!dataKey) return [];
-    const rawObj = dataKey.object || dataKey;
+export function getSubscription(data) {
+    const object = {};
 
-    const baseSubObj = {};
+    for (const attribute of SUBSCRIPTION_ATTRIBUTES) {
+        let value = data[attribute];
 
-    for (const attr of SUBSCRIPTION_ATTRIBUTES) {
-        const value = rawObj[attr];
+        if (attribute === "object") {
+            if (Array.isArray(value)) {
+                value = value
+                    .map(item => typeof item === "object" ? item?._id : item)
+                    .filter(Boolean)
+                    .sort();
+            } else if (typeof value === "object" && value !== null) {
+                value = value._id;
+            }
+        } else if (Array.isArray(value)) {
+            value = [...value].sort();
+        }
+
         if (value !== undefined && value !== null && value !== "") {
-            baseSubObj[attr] = value;
+            object[attribute] = value;
         }
     }
 
-    const keysSet = new Set();
-
-    // 1. Specific Document Key (includes exact object ID if present)
-    const sortedSpecific = Object.fromEntries(
-        Object.entries(baseSubObj).sort(([a], [b]) => a.localeCompare(b))
+    const normalizedObject = Object.fromEntries(
+        Object.entries(object).sort(([a], [b]) => a.localeCompare(b))
     );
-    keysSet.add(JSON.stringify(sortedSpecific));
 
-    // 2. Generic Scope Key (targets list component subscribers watching the collection)
-    if (baseSubObj.object) {
-        const genericSubObj = { ...baseSubObj };
-        genericSubObj.object = []; // Generalize object scope
+    if (normalizedObject.object && !normalizedObject.array) return;
 
-        const sortedGeneric = Object.fromEntries(
-            Object.entries(genericSubObj).sort(([a], [b]) => a.localeCompare(b))
+    return {
+        string: JSON.stringify(normalizedObject),
+        object: normalizedObject
+    };
+}
+
+/**
+ * Derives all target subscription channel keys for write operations (create, update, delete).
+ * Returns an array containing both the specific document scope key (with ID)
+ * and the generic scope key (without ID) to notify both single-item and list subscribers.
+ *
+ * @param {Object} data - CRUD data object
+ * @returns {string[]} Array of JSON-stringified subscription key channel strings
+ */
+export function deriveSubscriptionKeys(data) {
+    if (!data) return [];
+    const subscription = getSubscription(data);
+    if (!subscription) return [];
+    const baseSubObj = { ...subscription.object };
+    const objects = Array.isArray(baseSubObj.object)
+        ? baseSubObj.object
+        : baseSubObj.object
+            ? [baseSubObj.object]
+            : [];
+    delete baseSubObj.object;
+    const keysSet = new Set();
+    const addKey = (scope) => {
+        const sortedScope = Object.fromEntries(
+            Object.entries(scope).sort(([a], [b]) => a.localeCompare(b))
         );
-        keysSet.add(JSON.stringify(sortedGeneric));
-    }
+        keysSet.add(JSON.stringify(sortedScope));
+    };
+
+    for (const object of objects)
+        addKey({ ...baseSubObj, object });
+
+    // Collection subscribers use the same scope with the object omitted.
+    addKey(baseSubObj);
 
     return Array.from(keysSet);
 }
 
 /**
- * Sends a subscription payload to the socket server for a registered dataKey.
- * 
- * @param {Object} dataKey - Generated dataKey object { string, object }
- * @param {Object} [data] - Optional metadata or payload overrides
- * @returns {Object|undefined} Payload sent to the socket
- */
-export function subscribe(dataKey, data = {}) {
-    if (!dataKey || !dataKey.string) return;
-
-    const payload = {
-        method: "subscribe",
-        key: dataKey.string,
-        subscriptionKeys: deriveSubscriptionKeys(dataKey.object || dataKey),
-        ...dataKey.object,
-        ...data
-    };
-
-    if (socket && typeof socket.send === "function") {
-        socket.send(payload);
-    }
-
-    return payload;
-}
-
-/**
  * Sends an unsubscription payload to the socket server when an element scope is unmounted.
- * 
+ *
  * @param {Object} dataKey - Generated dataKey object { string, object }
  * @param {Object} [data] - Optional metadata or payload overrides
  * @returns {Object|undefined} Payload sent to the socket
  */
-export function unsubscribe(dataKey, data = {}) {
-    if (!dataKey || !dataKey.string) return;
+export function unsubscribe(subscription) {
+    if (!subscription || !subscription.string) return;
 
     const payload = {
         method: "unsubscribe",
-        key: dataKey.string,
-        subscriptionKeys: deriveSubscriptionKeys(dataKey.object || dataKey),
-        ...dataKey.object,
-        ...data
+        subscription: subscription.string
     };
 
     if (socket && typeof socket.send === "function") {
@@ -108,7 +108,7 @@ export function unsubscribe(dataKey, data = {}) {
 }
 
 export default {
+    getSubscription,
     deriveSubscriptionKeys,
-    subscribe,
     unsubscribe
 };

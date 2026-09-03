@@ -6,7 +6,14 @@ import { getAttributes } from "@cocreate/utils";
 import { initDataKey, getData, getDataObject } from "./getDataHandler.js";
 import { read, save } from "./crudHandler.js";
 import { setData } from "./setDataHandler.js";
-import { elements, forms, keys, debounce } from "./mapRegistry.js";
+import {
+    elements,
+    forms,
+    keys,
+    debounce,
+    elementSubscriptions,
+    subscriptions
+} from "./mapRegistry.js";
 import { unsubscribe } from "./subscribeHandler.js";
 
 const selector = "[storage], [database], [array], [render-json]";
@@ -160,17 +167,14 @@ export async function remove(element) {
 
             form = form.elements;
             for (let formEl of form.keys()) {
+                removeSubscription(formEl);
                 let key = elements.get(formEl);
                 if (key) {
                     let keyEntry = keys.get(key);
-                    if (keyEntry) {
-                        keyEntry.elements.delete(formEl);
-                        if (!keyEntry.elements.size) {
-                            // Last element watching this key was removed -> trigger socket unsubscribe
-                            unsubscribe(keyEntry.dataKey, keyEntry.data);
-                            keys.delete(key);
+                        if (keyEntry) {
+                            keyEntry.elements.delete(formEl);
+                            if (!keyEntry.elements.size) keys.delete(key);
                         }
-                    }
                     elements.delete(formEl);
                 }
             }
@@ -180,15 +184,13 @@ export async function remove(element) {
                 let keyEntry = keys.get(key);
                 if (keyEntry) {
                     keyEntry.elements.delete(el);
-                    if (!keyEntry.elements.size) {
-                        unsubscribe(keyEntry.dataKey, keyEntry.data);
-                        keys.delete(key);
-                    }
+                    if (!keyEntry.elements.size) keys.delete(key);
                 }
             }
             elements.delete(el);
             forms.delete(el);
         } else {
+            removeSubscription(el);
             let key = elements.get(el);
             if (key) {
                 if (el.getFilter) filter.filters.delete(el);
@@ -198,11 +200,7 @@ export async function remove(element) {
                     keyEntry.elements.delete(el);
                     elements.delete(el);
 
-                    if (!keyEntry.elements.size) {
-                        // Last element watching this key was removed -> trigger socket unsubscribe
-                        unsubscribe(keyEntry.dataKey, keyEntry.data);
-                        keys.delete(key);
-                    }
+                    if (!keyEntry.elements.size) keys.delete(key);
                 } else {
                     elements.delete(el);
                 }
@@ -218,6 +216,22 @@ export async function remove(element) {
             }
         }
     }
+}
+
+function removeSubscription(element) {
+    const subscription = elementSubscriptions.get(element);
+    if (!subscription) return;
+
+    const subscriptionEntry = subscriptions.get(subscription);
+    if (subscriptionEntry) {
+        subscriptionEntry.elements.delete(element);
+        if (!subscriptionEntry.elements.size) {
+            unsubscribe(subscriptionEntry.subscription);
+            subscriptions.delete(subscription);
+        }
+    }
+
+    elementSubscriptions.delete(element);
 }
 
 /**
@@ -273,6 +287,8 @@ Observer.init({
     attributeFilter: [
         "organization_id",
         "host",
+        "namespace",
+        "room",
         "storage",
         "database",
         "array",
