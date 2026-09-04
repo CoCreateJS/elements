@@ -8,7 +8,7 @@ import CRUD from "@cocreate/crud-client";
 
 import { elements, keys, debounce } from "./mapRegistry.js";
 import { getDataObject } from "./getDataHandler.js";
-import { setData } from "./setDataHandler.js";
+import { setData, setDataType } from "./setDataHandler.js";
 import {
     deriveSubscriptionKeys,
     getSubscription
