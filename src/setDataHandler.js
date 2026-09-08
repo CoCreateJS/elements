@@ -1,6 +1,7 @@
 import {
     dotNotationToObject,
     queryData,
+    searchData,
     sortData,
     getAttributes,
     checkValue,
@@ -16,14 +17,17 @@ export function setDataType(element, data, action) {
 
     if (!data) return;
 
+    const dataElements = new Set(getDataElements(data));
+
     let form;
     if (element.tagName === "FORM") {
         form = element;
-    } else if (element.parentElement){
+    } else if (element.parentElement) {
         form = element.parentElement.closest("form");
     }
 
     if (!form) {
+        dataElements.add(element);
         if (data.type === "object") {
             if (data.object?.[0]?._id) {
                 element.setAttribute("object", data.object[0]._id);
@@ -36,9 +40,10 @@ export function setDataType(element, data, action) {
         if (form.getAttribute("object") === "pending")
             form.setAttribute("object", data.object[0]._id);
 
-        let elements = formObject.types.get(data.type);
+        let typeElements = formObject.types.get(data.type);
 
-        for (let [el, elData] of elements.entries()) {
+        for (let [el, elData] of typeElements.entries()) {
+            dataElements.add(el);
             if (data.type === "object") {
                 if (!elData.object || elData.object === "pending") {
                     elData.object = data.object[0]._id;
@@ -49,8 +54,9 @@ export function setDataType(element, data, action) {
                 el.setAttribute(data.type, data[data.type].name);
             }
         }
-        setData(Array.from(elements.keys()), data);
     }
+
+    if (dataElements.size) setData(Array.from(dataElements), data);
 
     if (action) {
         action.element.dispatchEvent(
@@ -116,6 +122,11 @@ export async function setData(element, data) {
     for (let el of element) {
         // if rendered in server side skip
         if (el.hasAttribute("rendered")) return el.removeAttribute("rendered");
+        if (
+            data.method?.endsWith(".delete") &&
+            !(el.getFilter || el.renderValue)
+        )
+            continue;
         if (el.hasAttribute("render-json")) {
             console.log("render-json", "");
         }
@@ -189,6 +200,15 @@ export async function setData(element, data) {
 }
 
 async function filterData(element, data, type, key) {
+    if (
+        data.method &&
+        !data.method.endsWith(".read") &&
+        (element.getFilter || element.renderValue)
+    ) {
+        await checkFilters(element, data, type);
+        return;
+    }
+
     let operator = "",
         value;
 
@@ -260,15 +280,9 @@ async function filterData(element, data, type, key) {
         (data.method && data.method.endsWith(".read") && isRendered)
     ) {
         await loadMore(element, data, type);
-    } else if (
-        element.getFilter &&
-        data.method &&
-        !data.method.endsWith(".read")
-    ) {
-        await checkFilters(element, data, type);
     } else if (element.renderValue) {
         if (key)
-            data = {[key]: data}
+            data = { [key]: data }
         await element.renderValue(data);
     } else if (key === "$length") {
         element.setValue(data[type].length);
@@ -342,16 +356,12 @@ async function checkFilters(element, data, type) {
 
     if (!localData) return;
 
+    let filter = localData.filter
     let newData;
     if (type) {
         localData = localData[type];
         newData = data[type];
     } else newData = data;
-
-    let filter = await element.getFilter();
-    if (filter && filter.query) {
-        newData = newData.filter(item => queryData(item, filter.query));
-    }
 
     if (!newData || !newData.length) return;
 
@@ -364,6 +374,8 @@ async function checkFilters(element, data, type) {
             checkIndex(element, data, localData, newData, type, filter);
         }
     } else {
+        if (data.method?.endsWith(".delete")) return;
+
         let primaryKey;
         if (type === "object") {
             primaryKey = "_id";
@@ -395,16 +407,18 @@ async function checkFilters(element, data, type) {
 }
 
 function checkIndex(element, data, localData, newData, type, filter) {
-    let index;
-    if (type === "object") {
-        index = localData.findIndex((obj) => obj._id === newData._id);
-    } else {
-        index = localData.findIndex((obj) => obj.name === newData.name);
-    }
+    const primaryKey = type === "object" ? "_id" : "name";
+    const primaryValue = newData[primaryKey];
+    let index = localData.findIndex(
+        (item) => item[primaryKey] === primaryValue
+    );
+    const isMatch =
+        (!filter?.query || queryData(newData, filter.query)) &&
+        (!filter?.search || searchData(newData, filter.search));
 
     if (!data.filter) data.filter = {};
 
-    if (data.method.endsWith(".delete")) {
+    if (data.method.endsWith(".delete") || !isMatch) {
         if (index === -1) return;
         data.filter.remove = true;
         localData.splice(index, 1);
@@ -412,8 +426,7 @@ function checkIndex(element, data, localData, newData, type, filter) {
         if (data.method.endsWith(".create")) {
             if (index === -1) {
                 data.filter.create = true;
-                if (filter && filter.sort) newData.isNewData = true;
-                else index = localData.length;
+                index = localData.length;
                 localData.push(newData);
             }
         } else {
@@ -421,14 +434,13 @@ function checkIndex(element, data, localData, newData, type, filter) {
             data.filter.update = true;
             data.filter.currentIndex = index;
             localData[index] = dotNotationToObject(newData, localData[index]);
-            if (filter && filter.sort) {
-                localData[index].isNewData = true;
-            }
         }
 
         if (filter && filter.sort) {
             localData = sortData(localData, filter.sort);
-            index = localData.findIndex((obj) => obj.isNewData);
+            index = localData.findIndex(
+                (item) => item[primaryKey] === primaryValue
+            );
         }
     }
 

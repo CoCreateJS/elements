@@ -171,10 +171,10 @@ export async function remove(element) {
                 let key = elements.get(formEl);
                 if (key) {
                     let keyEntry = keys.get(key);
-                        if (keyEntry) {
-                            keyEntry.elements.delete(formEl);
-                            if (!keyEntry.elements.size) keys.delete(key);
-                        }
+                    if (keyEntry) {
+                        keyEntry.elements.delete(formEl);
+                        if (!keyEntry.elements.size) keys.delete(key);
+                    }
                     elements.delete(formEl);
                 }
             }
@@ -238,7 +238,7 @@ function removeSubscription(element) {
  * Initializes global CRUD socket response listeners.
  */
 export function initSocket() {
-    const type = ["storage", "database", "array", "index", "object", "filter"];
+    const type = ["storage", "database", "array", "index", "object"];
     const method = ["create", "update", "delete"];
 
     for (let i = 0; i < type.length; i++) {
@@ -249,6 +249,7 @@ export function initSocket() {
                 if (
                     !data.updateDB &&
                     data.status === "received" &&
+                    !data.method.includes(".delete") &&
                     CRUD.socket.frameId === data.frameId
                 )
                     return;
