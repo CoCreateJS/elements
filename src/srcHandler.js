@@ -14,9 +14,19 @@ const initializing = new WeakMap();
  */
 function isSameOrigin(urlStr) {
     try {
-        // Resolve the URL against the current document's origin.
-        const url = new URL(urlStr, window.location.origin);
-        return url.origin === window.location.origin;
+        let origin = window.location.origin;
+
+        // Sandboxed srcdoc/about:blank documents have an opaque URL even when
+        // same-origin access was explicitly granted. In that case, parent
+        // access succeeds only when the browser considers the frame trusted.
+        if (origin === "null" && window.parent !== window) {
+            origin = window.parent.location.origin;
+        }
+
+        if (!origin || origin === "null") return false;
+
+        const url = new URL(urlStr, origin);
+        return url.origin === origin;
     } catch (err) {
         console.error("Invalid URL format:", urlStr, err);
         return false;

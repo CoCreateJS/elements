@@ -363,7 +363,16 @@ async function checkFilters(element, data, type) {
         newData = data[type];
     } else newData = data;
 
-    if (!newData || !newData.length) return;
+    if (localData == null) {
+        if (element.renderValue) localData = [];
+        else return;
+    }
+
+    if (
+        newData == null ||
+        (Array.isArray(newData) && newData.length === 0)
+    )
+        return;
 
     if (Array.isArray(localData)) {
         if (Array.isArray(newData)) {
@@ -385,6 +394,7 @@ async function checkFilters(element, data, type) {
 
         if (Array.isArray(newData)) {
             for (let i = 0; i < newData.length; i++) {
+                if (!newData[i]) continue;
                 if (
                     typeof localData === "string" &&
                     localData === newData[i][primaryKey]
@@ -407,10 +417,11 @@ async function checkFilters(element, data, type) {
 }
 
 function checkIndex(element, data, localData, newData, type, filter) {
+    if (!newData) return;
     const primaryKey = type === "object" ? "_id" : "name";
     const primaryValue = newData[primaryKey];
     let index = localData.findIndex(
-        (item) => item[primaryKey] === primaryValue
+        (item) => item?.[primaryKey] === primaryValue
     );
     const isMatch =
         (!filter?.query || queryData(newData, filter.query)) &&
@@ -439,7 +450,7 @@ function checkIndex(element, data, localData, newData, type, filter) {
         if (filter && filter.sort) {
             localData = sortData(localData, filter.sort);
             index = localData.findIndex(
-                (item) => item[primaryKey] === primaryValue
+                (item) => item?.[primaryKey] === primaryValue
             );
         }
     }
