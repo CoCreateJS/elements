@@ -83,7 +83,9 @@ export async function read(element, data, dataKey) {
         const subscription = getSubscription(data);
         if (subscription) data.subscription = subscription.string;
 
-        CRUD.send(data).then((responseData) => setData(els, responseData));
+        CRUD.send(data).then((responseData) => {
+            if (responseData) setData(els, responseData);
+        });
     }, 500);
 }
 

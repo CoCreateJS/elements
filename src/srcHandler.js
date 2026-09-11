@@ -58,7 +58,13 @@ async function initElements(elements) {
         let initialize = initializing.get(element);
         if (initialize && initialize.src === src) continue;
 
-        initializing.set(element, { src });
+        const request = { src };
+        initializing.set(element, request);
+        const isCurrentRequest = () =>
+            initializing.get(element) === request &&
+            (element.getAttribute("src") ||
+                element.getAttribute("source") ||
+                element.getAttribute("stream")) === src;
         try {
             // --- SECURITY FIX: Conditional Sensitive Headers ---
             // Only attach the local state header if fetching from the same origin.
@@ -70,7 +76,13 @@ async function initElements(elements) {
                 }
             }
 
+            let error = element.getAttribute("error");
+            if (error === 404 || error === 403) {
+                element.removeAttribute("error");
+            }
+
             let response = await fetch(src, { headers });
+            if (!isCurrentRequest()) continue;
 
             if (response.status === 404 || response.status === 403) {
                 element.setAttribute("error", response.status);
@@ -90,6 +102,7 @@ async function initElements(elements) {
                 }
 
                 let text = await response.text();
+                if (!isCurrentRequest()) continue;
                 if (text) {
                     let path = "";
                     let pathElement = element.closest("[path]");

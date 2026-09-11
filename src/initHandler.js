@@ -277,7 +277,7 @@ Observer.init({
     types: ["removedNodes"],
     selector: selector,
     callback: function (mutation) {
-        if (mutation.target.hasAttribute("render-clone")) return;
+        if (mutation.target.closest("[render-clone]")) return;
         remove(mutation.target);
     }
 });
