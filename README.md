@@ -144,6 +144,24 @@ An empty `object` attribute means "no document yet". On save the module issues a
 </button>
 ```
 
+Multiple targets can be selected with `delete-query`. Each target declares its
+own CRUD scope; object targets sharing the same storage, database, and array are
+sent in one delete request.
+
+```html
+<button
+	actions="delete"
+	delete-query="$document [data-delete]:checked[]">
+	Delete selected
+</button>
+
+<input
+	type="checkbox"
+	data-delete
+	array="users"
+	object="64b9a32e18f21bc56789abcd" />
+```
+
 ---
 
 ## How it Works

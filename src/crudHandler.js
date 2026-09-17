@@ -203,9 +203,7 @@ export async function save(element, action) {
 
         if (
             data[i] &&
-            (data[i].method.endsWith(".create") ||
-                (data[i].type !== "object" &&
-                    data[i].method.endsWith(".update")))
+            (data[i].method.endsWith(".create") || data[i].method.endsWith(".update"))
         ) {
             setDataType(element, data[i], action);
         } else if (data[i]) {
@@ -250,35 +248,61 @@ Actions.init([
                 elements = [action.element];
             }
 
+            const groups = new Map();
             for (let i = 0; i < elements.length; i++) {
                 const data = getDataObject(elements[i]);
-                if (!data) return;
+                if (!data) continue;
                 data.method = data.type + ".delete";
 
-                if (elements[i].renderValue) {
-                    let selected = elements[i].querySelectorAll(".selected");
-                    data[data.type] = [];
-                    for (let j = 0; j < selected.length; j++) {
-                        let attribute = selected[j].getAttribute(data.type);
-                        if (attribute) {
-                            attribute = attribute.split(",");
-                            for (let k = 0; k < attribute.length; k++) {
-                                if (data.type === "object")
-                                    data[data.type].push({ _id: attribute[k] });
-                                else {
-                                    data[data.type].push(attribute[k]);
-                                }
-                            }
-                        }
-                    }
-                } else if (
+                if (
                     data.type === "object" &&
                     typeof data[data.type] === "string"
                 )
                     data[data.type] = { _id: data[data.type] };
 
-                // Attach subscriptionKeys before sending delete payload
-                const subscription = getSubscription(data);
+                if (data.type !== "object") {
+                    groups.set(Symbol(), data);
+                    continue;
+                }
+
+                const groupKey = JSON.stringify({
+                    storage: data.storage || "",
+                    database: data.database || "",
+                    array: data.array
+                });
+                const objects = Array.isArray(data.object)
+                    ? data.object
+                    : [data.object];
+                let group = groups.get(groupKey);
+
+                if (!group) {
+                    group = {
+                        ...data,
+                        object: [],
+                        objectIds: new Set()
+                    };
+                    groups.set(groupKey, group);
+                }
+
+                for (const object of objects) {
+                    if (!object || !object._id || group.objectIds.has(object._id))
+                        continue;
+                    group.objectIds.add(object._id);
+                    group.object.push({ _id: object._id });
+                }
+            }
+
+            for (const data of groups.values()) {
+                if (data.objectIds) {
+                    delete data.objectIds;
+                    if (!data.object.length) continue;
+                }
+
+                // Subscribe the requester at collection scope. A grouped object
+                // array is a delete payload, not a subscribable document key.
+                const subscriptionData = { ...data };
+                delete subscriptionData.object;
+                const subscription = getSubscription(subscriptionData);
                 if (subscription)
                     data.subscription = subscription.string;
                 data.subscriptionKeys = deriveSubscriptionKeys(data);

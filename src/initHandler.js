@@ -247,6 +247,7 @@ export function initSocket() {
 
             CRUD.listen(action, function (data) {
                 if (
+                    data.key &&
                     !data.updateDB &&
                     data.status === "received" &&
                     !data.method.includes(".delete") &&
@@ -268,6 +269,7 @@ Observer.init({
     types: ["addedNodes"],
     selector: selector,
     callback: function (mutation) {
+        if (mutation.move) return;
         init([mutation.target]);
     }
 });
@@ -277,7 +279,7 @@ Observer.init({
     types: ["removedNodes"],
     selector: selector,
     callback: function (mutation) {
-        if (mutation.target.closest("[render-clone]")) return;
+        if (mutation.move) return;
         remove(mutation.target);
     }
 });

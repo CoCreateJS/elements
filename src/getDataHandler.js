@@ -55,6 +55,13 @@ export function getDataObject(element) {
     else if (data.storage || data.storage === "") data.type = "storage";
     else if (data.data) data.type = "data";
 
+    if (
+        environment &&
+        !data.database &&
+        ["array", "index", "object"].includes(data.type)
+    )
+        data.database = environment;
+
     delete data.isRealtime;
     return data;
 }

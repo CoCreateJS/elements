@@ -142,9 +142,9 @@ Observer.init({
         let renderedNode = renderedNodes.get(mutation.target);
         if (!renderedNode) return;
 
-        if (!mutation.movedFrom) return;
-        let draggedEl = mutation.target;
-        let draggedFrom = mutation.movedFrom.parentElement;
+        if (!mutation.move || mutation.move.isDescendant) return;
+        let draggedEl = mutation.move.movedElement;
+        let draggedFrom = mutation.move.from.parentElement;
         let droppedEl =
             mutation.target.nextElementSibling ||
             mutation.target.previousElementSibling;

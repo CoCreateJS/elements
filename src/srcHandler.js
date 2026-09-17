@@ -52,6 +52,7 @@ async function initElements(elements) {
 
         if (element.hasAttribute("rendered")) {
             element.removeAttribute("rendered");
+            initializing.set(element, { src });
             continue;
         }
 
@@ -305,6 +306,7 @@ observer.init({
     types: ["addedNodes"],
     selector: selector,
     callback: function (mutation) {
+        if (mutation.move) return;
         init(mutation.target);
     }
 });
@@ -327,13 +329,7 @@ observer.init({
     attributeFilter: ["src"],
     selector: selector,
     callback: function (mutation) {
-        if (
-            mutation.oldValue !==
-            mutation.target.getAttribute(mutation.attributeName)
-        ) {
-            mutation.target.removeAttribute("rendered");
-            init(mutation.target);
-        }
+        init(mutation.target);
     }
 });
 
