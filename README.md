@@ -484,3 +484,31 @@ This software is dual-licensed under the GNU Affero General Public License versi
 * **Commercial Use**: For-profit companies and individuals intending to use this software for commercial purposes must obtain a commercial license. The commercial license is available when you sign up for an API key on our [website](https://cocreate.app). This license permits proprietary use and modification of the software without the copyleft requirements of the AGPLv3. It is ideal for integrating this software into proprietary commercial products and applications.
 
 If you have not purchased a commercial license and intend to use this software for commercial purposes, you are required to sign up for an API key on our website.
+
+
+### Enter shortcuts for action buttons
+
+Set `submit-query` on a form or an inner section to explicitly select the action
+element Enter should click from a single-line input:
+
+```html
+<form>
+    <section submit-query="#next-step">
+        <input name="name" />
+        <button id="next-step" type="button" actions="disabled, validate, save, disabled">Next</button>
+    </section>
+</form>
+```
+
+The nearest `submit-query` within the form wins. Its value uses CoCreate query
+selectors, resolved from the element carrying the attribute. The resolved
+target must have `actions`, belong to the same form, and be visible and enabled.
+No action target is inferred when the attribute is absent. Empty or unresolved
+queries, multiple returned targets, and disabled targets do not fall through to
+native submission. Held Enter does not repeatedly activate the button.
+
+Textareas, selects, editable content, input widgets, composition, modified
+keystrokes, and events already handled by another listener keep their normal
+keyboard behavior. This shortcut calls `.click()`; it does not submit the form
+itself. Existing `action`/`method` handling remains separate, and a submit button
+with `actions` can still preprocess an external submission through its chain.

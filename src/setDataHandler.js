@@ -37,8 +37,26 @@ export function setDataType(element, data, action) {
         }
     } else {
         let formObject = forms.get(form);
-        if (form.getAttribute("object") === "pending")
-            form.setAttribute("object", data.object[0]._id);
+        const fieldsets = form.querySelectorAll('fieldset[object="pending"]');
+        for (const scope of [...fieldsets, form]) {
+            if (scope.getAttribute("object") === "pending") {
+                const object = data.object?.[0];
+                if (scope.hasAttribute("array")) {
+                    const arrays = scope.getAttribute("array").split(",");
+                    const objectArrays = Array.isArray(object?.$array)
+                        ? object.$array
+                        : [object?.$array];
+                    if (object?._id && arrays.some((array) => {
+                        const name = array.trim();
+                        return name !== "" && objectArrays.includes(name);
+                    })) {
+                        scope.setAttribute("object", object._id);
+                    }
+                } else if (object?._id) {
+                    scope.setAttribute("object", object._id);
+                }
+            }
+        }
 
         let typeElements = formObject.types.get(data.type);
 
@@ -120,8 +138,11 @@ export async function setData(element, data) {
     }
 
     for (let el of element) {
-        // if rendered in server side skip
-        if (el.hasAttribute("rendered")) return el.removeAttribute("rendered");
+        // Keep SSR content for this element without skipping its batch siblings.
+        if (el.hasAttribute("rendered")) {
+            el.removeAttribute("rendered");
+            continue;
+        }
         if (
             data.method?.endsWith(".delete") &&
             !(el.getFilter || el.renderValue)
@@ -200,11 +221,20 @@ export async function setData(element, data) {
 }
 
 async function filterData(element, data, type, key) {
+    if (key === "$length" && (data.error || !Array.isArray(data[type]))) return;
     if (
         data.method &&
         !data.method.endsWith(".read") &&
         (element.getFilter || element.renderValue)
     ) {
+        // A write payload is a document delta, not the result of this count's
+        // query. Keep the displayed count until its own filtered read completes.
+        // Re-read even for partial updates: a document may have left the query.
+        if (key === "$length" && element.getFilter && element.setFilter) {
+            if (data.error || !data[type]?.length) return;
+            element.setFilter(await element.getFilter());
+            return;
+        }
         await checkFilters(element, data, type);
         return;
     }
@@ -276,7 +306,7 @@ async function filterData(element, data, type, key) {
     ) {
         await element.renderValue(data);
     } else if (
-        (data.filter && data.filter.loadmore) ||
+        (data.filter && data.filter.loadMore) ||
         (data.method && data.method.endsWith(".read") && isRendered)
     ) {
         await loadMore(element, data, type);
@@ -316,30 +346,22 @@ async function filterData(element, data, type, key) {
 }
 
 async function loadMore(element, data, type, sort) {
-    let clonedData = { ...data };
-    let renderedData = await element.getData();
-    if (!renderedData || !renderedData[type]) {
-        return;
-    }
-    for (let i = 0; i < clonedData[type].length; i++) {
-        let index;
-        if (type === "object") {
-            index = renderedData[type].findIndex(
-                (obj) => obj._id === clonedData[type][i]._id
-            );
-        } else {
-            index = renderedData[type].findIndex(
-                (obj) => obj.name === clonedData[type][i].name
-            );
-        }
+    const renderedData = await element.getData();
+    if (!renderedData || !renderedData[type]) return;
 
-        if (index >= 0) {
-            clonedData[type].splice(i, 1);
-            i--; // Adjust the index to account for the removed item
-        }
-    }
-    if (clonedData[type].length > 0) {
-        await element.renderValue(clonedData);
+    const key = type === "object" ? "_id" : "name";
+    const renderedKeys = new Set(renderedData[type].map(item => item[key]));
+    const records = data[type].filter(item => {
+        if (renderedKeys.has(item[key])) return false;
+        renderedKeys.add(item[key]);
+        return true;
+    });
+    if (records.length) {
+        await element.renderValue({
+            ...data,
+            [type]: records,
+            filter: { ...data.filter, loadMore: true, overwrite: false }
+        });
     }
 }
 
@@ -385,6 +407,7 @@ async function checkFilters(element, data, type) {
     } else {
         if (data.method?.endsWith(".delete")) return;
 
+        let matched = false;
         let primaryKey;
         if (type === "object") {
             primaryKey = "_id";
@@ -400,16 +423,21 @@ async function checkFilters(element, data, type) {
                     localData === newData[i][primaryKey]
                 ) {
                     localData = newData[i];
-                } else if (localData[primaryKey] === newData[i][primaryKey]) {
+                    matched = true;
+                } else if (localData[primaryKey] && localData[primaryKey] === newData[i][primaryKey]) {
                     localData = dotNotationToObject(newData[i], localData);
+                    matched = true;
                 }
             }
         } else if (typeof localData === "string" && localData === newData[primaryKey]) {
             localData = newData;
-        } else if (localData[primaryKey] === newData[primaryKey]) {
+            matched = true;
+        } else if (localData[primaryKey] && localData[primaryKey] === newData[primaryKey]) {
             localData = dotNotationToObject(newData, localData);
+            matched = true;
         }
 
+        if (!matched) return;
         if (element.renderValue) element.renderValue(data);
         // render({ element, data, key: type });
         else if (data) element.setValue(localData);

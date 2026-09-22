@@ -29,8 +29,12 @@ export async function read(element, data, dataKey) {
             data = { ...existingData.dataKey.object };
     }
 
-    if (!dataKey || !data.type) return;
-    if (!data.filter && !data[data.type]) return;
+    if (!dataKey || !data?.type) {
+        return;
+    }
+    if (!data.filter && !data[data.type]) {
+        return;
+    }
 
     if (!(element instanceof HTMLCollection) && !Array.isArray(element))
         element = [element];
@@ -49,8 +53,6 @@ export async function read(element, data, dataKey) {
         ) {
             el.hasRead = true;
             delay.elements.set(el, true);
-        } else {
-            // console.log("read skipped", el);
         }
     }
 
@@ -70,21 +72,27 @@ export async function read(element, data, dataKey) {
         if (!els.length) return;
 
         if (!data.filter && data.type === "object") {
-            if (!data.object) return;
+            if (!data.object) {
+                return;
+            }
             else if (typeof data.object === "string")
                 data.object = { _id: data.object };
             else if (Array.isArray(data.object)) {
                 if (data.object.length)
                     data.object = { _id: data.object[0]._id };
-            } else if (!data.object._id.match(/^[0-9a-fA-F]{24}$/)) return;
+            } else if (!data.object._id.match(/^[0-9a-fA-F]{24}$/)) {
+                return;
+            }
         }
 
         data.method = data.type + ".read";
         const subscription = getSubscription(data);
         if (subscription) data.subscription = subscription.string;
 
-        CRUD.send(data).then((responseData) => {
-            if (responseData) setData(els, responseData);
+        CRUD.send(data).then(async (responseData) => {
+            if (responseData) {
+                await setData(els, responseData);
+            }
         });
     }, 500);
 }
@@ -121,8 +129,17 @@ export async function save(element, action) {
 
         value = await element.getValue();
         let key = element.getAttribute("key");
-
-        if (typeof data[data.type] === "string")
+        if (data.type === "object" && !data.object) {
+            if (key == "{}") {
+                if (Array.isArray(value)) {
+                    data[data.type] = value.map((v) => ({ ...v }));
+                } else
+                    data[data.type] = value;
+            } else {
+                data[data.type] = { [key]: value };
+            }
+        }
+        else if (typeof data[data.type] === "string")
             if (key == "{}")
                 data[data.type] = { _id: data[data.type], ...value };
             else data[data.type] = { _id: data[data.type], [key]: value };

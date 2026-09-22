@@ -43,36 +43,31 @@ export async function init(element) {
             elements.has(element[i]) ||
             element[i].tagName === "FORM" ||
             element[i].getAttribute("crud") === "false"
-        )
+        ) {
             continue;
+        }
 
         promises.push(
             (async () => {
-                let data = await initElement(element[i]);
-                if (data) {
-                    let dataKey = initDataKey(element[i], data);
-                    return { string: dataKey.string, data };
+                const el = element[i];
+                try {
+                    const data = await initElement(el);
+                    if (data) {
+                        const dataKey = initDataKey(el, data);
+                        // read() already batches elements by dataKey. Schedule each
+                        // ready element without waiting for unrelated async fields.
+                        await read(el, data, dataKey);
+                    }
+                } catch (error) {
+                    // Allow initialization to be retried if filter setup failed.
+                    if (elements.get(el) === "") elements.delete(el);
+                    console.error("[CoCreateElements] Failed to initialize element:", el, error);
                 }
             })()
         );
     }
 
-    let results = await Promise.all(promises);
-    let dataObjects = new Map();
-
-    for (let res of results) {
-        if (res) dataObjects.set(res.string, res.data);
-    }
-
-    if (dataObjects && dataObjects.size > 0) {
-        for (let key of dataObjects.keys()) {
-            let keyEntry = keys.get(key);
-            if (keyEntry) {
-                let { data, elements: mappedElements } = keyEntry;
-                read(Array.from(mappedElements.keys()), data, { string: key });
-            }
-        }
-    }
+    await Promise.all(promises);
 }
 
 /**
@@ -83,14 +78,17 @@ export async function init(element) {
  */
 export async function initElement(el) {
     let data = getDataObject(el);
-    if (!data || !data.type) return;
+    if (!data || !data.type) {
+        return;
+    }
 
     if (
         data.object &&
         data.object !== "pending" &&
         !/^[0-9a-fA-F]{24}$/.test(data.object)
-    )
+    ) {
         return;
+    }
 
     if (!elements.has(el)) {
         elements.set(el, "");

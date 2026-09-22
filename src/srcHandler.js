@@ -50,14 +50,15 @@ async function initElements(elements) {
 
         if (!src || /{{\s*([\w\W]+)\s*}}/g.test(src)) continue;
 
+        let initialize = initializing.get(element);
+
         if (element.hasAttribute("rendered")) {
             element.removeAttribute("rendered");
             initializing.set(element, { src });
-            continue;
+            continue
         }
+        // if (initialize && initialize.src === src) continue;
 
-        let initialize = initializing.get(element);
-        if (initialize && initialize.src === src) continue;
 
         const request = { src };
         initializing.set(element, request);
@@ -77,17 +78,16 @@ async function initElements(elements) {
                 }
             }
 
-            let error = element.getAttribute("error");
-            if (error === 404 || error === 403) {
-                element.removeAttribute("error");
-            }
-
             let response = await fetch(src, { headers });
             if (!isCurrentRequest()) continue;
 
             if (response.status === 404 || response.status === 403) {
                 element.setAttribute("error", response.status);
                 continue;
+            }
+
+            if (response.ok && ["304", "403", "404"].includes(element.getAttribute("error"))) {
+                element.removeAttribute("error");
             }
 
             if (element.tagName === "AUDIO" || element.tagName === "VIDEO") {
@@ -105,19 +105,19 @@ async function initElements(elements) {
                 let text = await response.text();
                 if (!isCurrentRequest()) continue;
                 if (text) {
-                    let path = "";
-                    let pathElement = element.closest("[path]");
-                    if (pathElement) {
-                        path =
-                            pathElement.getAttribute("path") ||
-                            getRelativePath();
-                    } else {
-                        path = getRelativePath();
-                    }
-                    // Replace $relativePath in the fetched text
-                    if (path) {
-                        text = text.replaceAll(/\$relativePath\/?/g, path);
-                    }
+                    // let path = "";
+                    // let pathElement = element.closest("[path]");
+                    // if (pathElement) {
+                    //     path =
+                    //         pathElement.getAttribute("path") ||
+                    //         getRelativePath();
+                    // } else {
+                    //     path = getRelativePath();
+                    // }
+                    // // Replace $relativePath in the fetched text
+                    // if (path) {
+                    //     text = text.replaceAll(/\$relativePath\/?/g, path);
+                    // }
                     // Replace ObjectId() with a new ObjectId
                     text = text.replaceAll("ObjectId()", () => {
                         return ObjectId().toString();
