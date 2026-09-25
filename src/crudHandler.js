@@ -247,7 +247,31 @@ Actions.init([
     {
         name: "save",
         endEvent: "saved",
-        callback: (action) => {
+        callback: async (action) => {
+            if (action.element.hasAttribute("save-query")) {
+                const targets = queryElements({
+                    element: action.element,
+                    prefix: "save"
+                });
+
+                if (!targets.length) {
+                    action.abort();
+                    return;
+                }
+
+                try {
+                    const result = [];
+                    for (const target of targets) {
+                        result.push(await save(target));
+                    }
+                    action.end({ result });
+                } catch (error) {
+                    action.abort();
+                    console.error("Save action failed:", error);
+                }
+                return;
+            }
+
             if (action.form || action) save(action.form, action);
         }
     },

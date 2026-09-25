@@ -57,7 +57,7 @@ async function initElements(elements) {
             initializing.set(element, { src });
             continue
         }
-        // if (initialize && initialize.src === src) continue;
+        if (initialize && initialize.src === src) continue;
 
 
         const request = { src };

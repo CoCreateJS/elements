@@ -339,10 +339,13 @@ async function filterData(element, data, type, key) {
         if (filterElement) filterElement.index = data.filter.index;
     }
 
-    if (!data[type] || !Array.isArray(data[type]) || !data[type].length) return;
-
-    const evt = new CustomEvent("fetchedData", { bubbles: true });
+    const evt = new CustomEvent("fetchedData", {
+        bubbles: true,
+        detail: data
+    });
     element.dispatchEvent(evt);
+
+    if (!data[type] || !Array.isArray(data[type]) || !data[type].length) return;
 }
 
 async function loadMore(element, data, type, sort) {

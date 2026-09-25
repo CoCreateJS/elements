@@ -15,6 +15,28 @@ import { read, save } from "./crudHandler.js";
 
 const environment = localStorage.getItem("environment");
 
+function registerFormElement(form, element, data) {
+    if (!form || !data?.type) return;
+
+    if (!form.save) form.save = () => save(form);
+    if (!form.getData) form.getData = () => getData(form);
+
+    let formObject = forms.get(form);
+    if (!formObject) {
+        formObject = {
+            elements: new Map(),
+            types: new Map()
+        };
+        forms.set(form, formObject);
+    }
+
+    formObject.elements.set(element, data);
+    if (!formObject.types.has(data.type)) {
+        formObject.types.set(data.type, new Map());
+    }
+    formObject.types.get(data.type).set(element, data);
+}
+
 /**
  * Parses and normalizes HTML attributes from an element into a canonical CRUD data object.
  * Infers execution type (object, index, array, database, storage, data) dynamically.
@@ -106,28 +128,8 @@ export function initDataKey(element, data) {
 
     elements.set(element, dataKey.string);
 
-    if (element.parentElement) {
-        const form = element.closest("form");
-        if (form) {
-            if (!form.save) form.save = () => save(form);
-            if (!form.getData) form.getData = () => getData(form);
-
-            let formObject = forms.get(form);
-            if (formObject) {
-                formObject.elements.set(element, data);
-                if (formObject.types.has(data.type)) {
-                    formObject.types.get(data.type).set(element, data);
-                } else {
-                    formObject.types.set(data.type, new Map([[element, data]]));
-                }
-            } else {
-                forms.set(form, {
-                    elements: new Map([[element, data]]),
-                    types: new Map([[data.type, new Map([[element, data]])]])
-                });
-            }
-        }
-    }
+    const form = element.form || element.closest?.("form");
+    registerFormElement(form, element, data);
 
     if (!element.read) element.read = () => read(element);
     if (!element.save) element.save = () => save(element);
@@ -389,15 +391,20 @@ function formatPayload(payload, value, element) {
  */
 export async function getData(form) {
     const dataKeys = new Map();
-    const formObject = forms.get(form);
+    const selector = "[storage], [database], [array], [object]";
 
-    if (!formObject) {
-        const selector = "[storage], [database], [array], [object]";
-        const elementsInForm = form.querySelectorAll(selector);
-        await init(elementsInForm);
-        return await getData(form);
+    // form.elements includes controls associated through form="id", even when
+    // the controller lives elsewhere in the document.
+    for (const element of Array.from(form.elements || [])) {
+        if (!element.matches(selector)) continue;
+
+        const dataKey = elements.get(element);
+        const data = keys.get(dataKey)?.data || getDataObject(element);
+        registerFormElement(form, element, data);
     }
 
+    const formObject = forms.get(form);
+    if (!formObject) return [];
 
     for (const type of formObject.types.values()) {
         for (const [element, data] of type.entries()) {
@@ -420,6 +427,17 @@ export async function getData(form) {
 
             const value = await element.getValue();
             if (value === undefined) continue;
+
+            // A form can expose multiple file sources (for example, device and
+            // camera) while only one source has a pending selection. An unused
+            // file input must not produce an empty object.create operation.
+            if (
+                element.matches('input[type="file"]') &&
+                Array.isArray(value) &&
+                value.length === 0
+            ) {
+                continue;
+            }
 
             const payload = { ...data };
             const dataKey = elements.get(element);
