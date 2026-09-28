@@ -398,8 +398,10 @@ export async function getData(form) {
     for (const element of Array.from(form.elements || [])) {
         if (!element.matches(selector)) continue;
 
-        const dataKey = elements.get(element);
-        const data = keys.get(dataKey)?.data || getDataObject(element);
+        // A dataKey identifies the document scope and intentionally excludes
+        // the field-level `key`. Reusing the registry entry's data here would
+        // therefore give every control the key of the first registered field.
+        const data = getDataObject(element);
         registerFormElement(form, element, data);
     }
 
