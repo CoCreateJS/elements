@@ -58,9 +58,9 @@ export function setDataType(element, data, action) {
             }
         }
 
-        let typeElements = formObject.types.get(data.type);
+        const typeElements = formObject?.types?.get(data.type);
 
-        for (let [el, elData] of typeElements.entries()) {
+        for (let [el, elData] of typeElements?.entries() || []) {
             dataElements.add(el);
             if (data.type === "object") {
                 if (!elData.object || elData.object === "pending") {
@@ -162,6 +162,14 @@ export async function setData(element, data) {
         }
 
         const { key, isRead, isUpdate, isListen, isCrdt } = getAttributes(el);
+        const hasRenderController =
+            el.hasAttribute("render-query") || el.hasAttribute("render-json");
+
+        // array/object without a key establishes CRUD identity only. Do not
+        // write the response into the element unless it explicitly controls a
+        // render target.
+        if (key === undefined && !hasRenderController) continue;
+
         let elementType = el.getAttribute("type");
         if (elementType !== "file" && (el.getFilter || el.renderValue))
             await filterData(el, data, type, key);

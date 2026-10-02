@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const test = require('node:test');
 
 async function setup() {
-    const requests = [], jobs = new Map(), errors = [];
+    const requests = [], jobs = new Map(), errors = [], observers = [];
     let timerId = 0;
     const context = vm.createContext({
         console: { error: (...args) => errors.push(args), log() {} },
@@ -16,7 +16,7 @@ async function setup() {
         clearTimeout: (id) => jobs.delete(id)
     });
     const stubs = {
-        '@cocreate/observer': { default: { init() {} } },
+        '@cocreate/observer': { default: { init(options) { observers.push(options); } } },
         '@cocreate/actions': { default: { init() {} } },
         '@cocreate/socket-client': { default: { send() {} } },
         '@cocreate/crud-client': { default: { listen() {}, send: async (data) => { requests.push(data); } } },
@@ -45,7 +45,7 @@ async function setup() {
     await module.link(load);
     await module.evaluate();
     return {
-        init: module.namespace.init, requests, errors,
+        init: module.namespace.init, requests, errors, observers,
         flush() { const batch = [...jobs.values()]; jobs.clear(); for (const job of batch) job(); }
     };
 }
@@ -122,4 +122,24 @@ test('read=false and already read elements remain excluded', async () => {
     await f.init([element('111111111111111111111111', { read: 'false' }), read]);
     f.flush();
     assert.equal(f.requests.length, 0);
+});
+
+test('changing read from false to true reads the current composed filter', async () => {
+    const f = await setup();
+    const attributes = { read: 'false' };
+    const el = element('', attributes);
+    el.data = { array: 'files', object: '', key: '' };
+    el.getFilter = async () => ({ query: { path: '/' }, index: 0 });
+
+    await f.init(el);
+    f.flush();
+    assert.equal(f.requests.length, 0);
+
+    attributes.read = 'true';
+    const observer = f.observers.find(item => item.name === 'CoCreateElementsReadAttribute');
+    await observer.callback({ target: el, oldValue: 'false' });
+    f.flush();
+
+    assert.equal(f.requests.length, 1);
+    assert.equal(f.requests[0].filter.query.path, '/');
 });

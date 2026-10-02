@@ -90,7 +90,9 @@ function dndNewData(element, data) {
 
     let renderedNode = renderedNodes.get(element);
     if (renderedNode) {
-        keyPath = renderedNode.keyPath;
+        const renderKeys = renderedNode.keys || {};
+        const activeKey = Object.keys(renderKeys).at(-1);
+        keyPath = activeKey ? renderKeys[activeKey].path : undefined;
         clonesMap = renderedNode.template.clones;
         clones = Array.from(clonesMap.values());
         index = clones.indexOf(element);

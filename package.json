@@ -42,6 +42,7 @@
     "@cocreate/filter": "^1.37.0",
     "@cocreate/observer": "^1.23.0",
     "@cocreate/render": "^1.51.0",
+    "@cocreate/socket-client": "^1.43.0",
     "@cocreate/utils": "^1.54.0"
   },
   "devDependencies": {

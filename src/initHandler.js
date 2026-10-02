@@ -307,6 +307,39 @@ Observer.init({
     }
 });
 
+Observer.init({
+    name: "CoCreateElementsReadAttribute",
+    types: ["attributes"],
+    attributeFilter: ["read"],
+    selector,
+    callback: async function (mutation) {
+        const el = mutation.target;
+        const currentValue = el.getAttribute("read");
+        if (currentValue === mutation.oldValue) return;
+
+        if (currentValue === "false") {
+            el.hasRead = false;
+            for (const [key, pending] of debounce) {
+                pending.elements?.delete(el);
+                if (pending.elements && !pending.elements.size) {
+                    clearTimeout(pending.timer);
+                    debounce.delete(key);
+                }
+            }
+            return;
+        }
+
+        if (!elements.has(el)) {
+            await init([el]);
+        } else if (el.getFilter && el.setFilter) {
+            el.setFilter(await el.getFilter());
+        } else {
+            el.hasRead = false;
+            await read(el);
+        }
+    }
+});
+
 init();
 
 export default { init, initElement, initSocket, remove };

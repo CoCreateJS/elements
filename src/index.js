@@ -33,6 +33,7 @@ import { reset } from "./formHandler.js";
 import "@cocreate/element-prototype";
 import "./dndHandler.js";
 import "./srcHandler.js";
+import "./socketHandler.js";
 import "./valueQuery.js";
 
 import { elements, forms, keys, debounce } from "./mapRegistry.js"

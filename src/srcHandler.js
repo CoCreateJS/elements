@@ -1,8 +1,18 @@
 import observer from "@cocreate/observer";
 import { getRelativePath, ObjectId } from "@cocreate/utils";
 
-const selector =
-    "[src]:not(img, video, audio, script, input, iframe, frame, link, source), [source], [stream]";
+const sourceTagNames = new Set([
+    "IMG",
+    "VIDEO",
+    "AUDIO",
+    "SCRIPT",
+    "INPUT",
+    "IFRAME",
+    "FRAME",
+    "LINK",
+    "SOURCE"
+]);
+const selector = "[src], [source], [stream]";
 
 const initializing = new WeakMap();
 
@@ -34,6 +44,8 @@ function isSameOrigin(urlStr) {
 }
 
 function init(elements) {
+    if (elements?.tagName && sourceTagNames.has(elements.tagName)) return;
+
     if (elements && !Array.isArray(elements)) elements = [elements];
 
     if (!elements) elements = document.querySelectorAll(selector);
@@ -43,6 +55,8 @@ function init(elements) {
 
 async function initElements(elements) {
     for (let element of elements) {
+        if (sourceTagNames.has(element.tagName)) continue;
+
         let src =
             element.getAttribute("src") ||
             element.getAttribute("source") ||
@@ -304,7 +318,7 @@ function base64ToArrayBuffer(base64) {
 observer.init({
     name: "CoCreateSrc",
     types: ["addedNodes"],
-    selector: selector,
+    selector: "[src], [source], [stream]",
     callback: function (mutation) {
         if (mutation.move) return;
         init(mutation.target);
@@ -327,7 +341,7 @@ observer.init({
     name: "CoCreateSrcAttributes",
     types: ["attributes"],
     attributeFilter: ["src"],
-    selector: selector,
+    selector: "[src], [source], [stream]",
     callback: function (mutation) {
         init(mutation.target);
     }
