@@ -377,6 +377,20 @@ async function loadMore(element, data, type, sort) {
 }
 
 async function checkFilters(element, data, type) {
+    if (type && data[type]) {
+        const applyUpdate = (record) => {
+            if (!record?.$update) return record;
+            const { $update, ...fields } = record;
+            return { ...fields, ...$update };
+        };
+        data = {
+            ...data,
+            [type]: Array.isArray(data[type])
+                ? data[type].map(applyUpdate)
+                : applyUpdate(data[type])
+        };
+    }
+
     let localData;
     if (!element.getData) {
         // TODO: getDataObject is related to render or form, but filter could exist on an input which does not have getData

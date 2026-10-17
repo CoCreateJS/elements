@@ -396,7 +396,7 @@ export async function getData(form) {
     // form.elements includes controls associated through form="id", even when
     // the controller lives elsewhere in the document.
     for (const element of Array.from(form.elements || [])) {
-        if (!element.matches(selector)) continue;
+        if (!element.matches(selector) || element.closest("[template]")) continue;
 
         // A dataKey identifies the document scope and intentionally excludes
         // the field-level `key`. Reusing the registry entry's data here would
@@ -411,6 +411,7 @@ export async function getData(form) {
     for (const type of formObject.types.values()) {
         for (const [element, data] of type.entries()) {
             if (
+                element.closest("[template]") ||
                 !element.hasAttribute("key") ||
                 element.getAttribute("save") === "false"
             ) {
