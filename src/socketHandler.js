@@ -57,7 +57,7 @@ function dispatchSocketError(element, form, error) {
 }
 
 function getResponseError(response) {
-    if (!response?.error && response?.ai?.status !== "error") return null;
+    if (!response?.error && response?.success !== false && response?.ai?.status !== "error") return null;
     return new Error(
         response.ai?.message || response.error || "Socket request failed."
     );
@@ -66,6 +66,10 @@ function getResponseError(response) {
 async function send({ element, form, continue: next, abort }) {
     const scope = getSocketScope(element, form);
     const method = scope?.getAttribute?.("socket") || element?.getAttribute?.("socket");
+    const checkbox = element?.matches?.('input[type="checkbox"]') ? element : null;
+    const previousChecked = checkbox ? !checkbox.checked : null;
+    const wasDisabled = checkbox?.disabled;
+    if (checkbox) checkbox.disabled = true;
 
     try {
         const data = await getData({ element, form, scope });
@@ -95,11 +99,19 @@ async function send({ element, form, continue: next, abort }) {
             });
         }
         const responseError = getResponseError(response);
-        if (responseError) dispatchSocketError(element, form, responseError);
+        if (responseError) {
+            if (checkbox) checkbox.checked = previousChecked;
+            dispatchSocketError(element, form, responseError);
+            abort?.();
+            return;
+        }
         next?.();
     } catch (error) {
+        if (checkbox) checkbox.checked = previousChecked;
         dispatchSocketError(element, form, error);
         abort?.();
+    } finally {
+        if (checkbox) checkbox.disabled = wasDisabled;
     }
 }
 

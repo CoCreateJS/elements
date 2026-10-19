@@ -215,6 +215,13 @@ export async function save(element, action) {
         data[i].subscriptionKeys = deriveSubscriptionKeys(data[i]);
 
         data[i] = await CRUD.send(data[i]);
+        const errors = data[i]?.error;
+        if (!data[i] || (Array.isArray(errors) ? errors.length > 0 : !!errors)) {
+            const message = Array.isArray(errors)
+                ? errors.map((error) => error.message || String(error)).join("; ")
+                : errors?.message || String(errors || "Save failed");
+            throw new Error(message);
+        }
 
         responseDataList.push(data[i]);
 
@@ -255,7 +262,11 @@ Actions.init([
                 });
 
                 if (!targets.length) {
-                    action.abort();
+                    action.abort({
+                        code: "save-target-not-found",
+                        message: "The save target could not be found.",
+                        selector: action.element.attributes.getNamedItem("save-query")?.value
+                    });
                     return;
                 }
 
@@ -266,13 +277,26 @@ Actions.init([
                     }
                     action.end({ result });
                 } catch (error) {
-                    action.abort();
+                    action.abort({
+                        code: "save-failed",
+                        message: "Unable to save the form.",
+                        cause: error
+                    });
                     console.error("Save action failed:", error);
                 }
                 return;
             }
 
-            if (action.form || action) save(action.form, action);
+            try {
+                await save(action.form || action.element, action);
+            } catch (error) {
+                action.abort({
+                    code: "save-failed",
+                    message: "Unable to save the form.",
+                    cause: error
+                });
+                console.error("Save action failed:", error);
+            }
         }
     },
     {
