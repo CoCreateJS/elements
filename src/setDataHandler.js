@@ -12,7 +12,7 @@ import filter from "@cocreate/filter";
 import { elements, forms, keys } from "./mapRegistry.js";
 import { getDataElements, getDataObject } from "./getDataHandler.js";
 
-export function setDataType(element, data, action) {
+export async function setDataType(element, data, action) {
     // TODO: if an array name is updated, the attibute array="" needs to be updated.
 
     if (!data) return;
@@ -74,7 +74,7 @@ export function setDataType(element, data, action) {
         }
     }
 
-    if (dataElements.size) setData(Array.from(dataElements), data);
+    if (dataElements.size) await setData(Array.from(dataElements), data);
 
     if (action) {
         action.element.dispatchEvent(

@@ -229,7 +229,7 @@ export async function save(element, action) {
             data[i] &&
             (data[i].method.endsWith(".create") || data[i].method.endsWith(".update"))
         ) {
-            setDataType(element, data[i], action);
+            await setDataType(element, data[i], action);
         } else if (data[i]) {
             if (action) {
                 action.element.dispatchEvent(

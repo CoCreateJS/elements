@@ -11,13 +11,13 @@ async function loadSetData() {
     const utils = {
         dotNotationToObject: value => value, queryData: () => true,
         searchData: () => true, sortData: value => value,
-        getAttributes: element => ({ key: element.getAttribute('key') }),
+        getAttributes: element => ({ key: element.getAttribute('key'), isRead: element.getAttribute('read') }),
         checkValue: () => true,
         getValueFromObject: (object, key) => object[key]
     };
     const modules = {
         '@cocreate/utils': utils,
-        '@cocreate/crud-client': { default: {} },
+        '@cocreate/crud-client': { default: { getValueFromObject: (object, key) => object[key] } },
         '@cocreate/filter': { default: { filters: new Map() } },
         './mapRegistry.js': { elements: new WeakMap(), forms: new WeakMap(), keys: new Map() },
         './getDataHandler.js': { getDataElements: () => [], getDataObject: element => ({ object: element.getAttribute('object') }) }
@@ -90,5 +90,19 @@ test('unmatched document updates do not write the empty object attribute into a 
     const el = element({ array: 'servers', object: '', key: '$length' });
     el.getFilter = async () => ({});
     await setData(el, { method: 'object.update', array: 'servers', object: [{ _id: 'other' }] });
+    assert.deepEqual(el.values, []);
+});
+
+test('read=false keeps a deferred value expression intact when a save response arrives', async () => {
+    const setData = await loadSetData();
+    const expression = '$query($closest #provision-workflow #cluster-object-id).getValue()';
+    const el = element({ key: 'cluster_id', read: 'false', value: expression });
+    el.setValue = value => { el.values.push(value); el.value = value; };
+    el.value = expression;
+    await setData(el, {
+        method: 'object.create', array: 'servers',
+        object: [{ _id: 'server', cluster_id: '65f8cb447b39a3c1a8904e22' }]
+    });
+    assert.equal(el.value, expression);
     assert.deepEqual(el.values, []);
 });
