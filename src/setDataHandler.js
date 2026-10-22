@@ -157,11 +157,16 @@ export async function setData(element, data) {
         if (action && ["database", "array", "object", "key"].includes(action))
             continue;
 
-        if (data.array.includes("aiConversations")) {
-            console.log("testing ai conversations");
+        const { key, isRead, isUpdate, isListen, isCrdt } = getAttributes(el);
+        if (key !== undefined && typeof key !== "string") {
+            console.error("[CoCreate elements] Ignoring element with a non-string key", {
+                key,
+                keyType: typeof key,
+                element: el
+            });
+            continue;
         }
 
-        const { key, isRead, isUpdate, isListen, isCrdt } = getAttributes(el);
         const hasRenderController =
             el.hasAttribute("render-query") || el.hasAttribute("render-json");
 
