@@ -205,7 +205,9 @@ export async function save(element, action) {
                 array: data[i].array,
                 key: data[i].key,
                 object: data[i].object._id,
-                value
+                value,
+                realtime: true,
+                commit: true
             });
         }
 

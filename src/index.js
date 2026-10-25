@@ -35,6 +35,7 @@ import "./dndHandler.js";
 import "./srcHandler.js";
 import "./socketHandler.js";
 import "./valueQuery.js";
+import "./iframeHandler.js";
 
 import { elements, forms, keys, debounce } from "./mapRegistry.js"
 
