@@ -2,6 +2,7 @@ import Observer from "@cocreate/observer";
 import { getAttributeNames, ObjectId, queryElements } from "@cocreate/utils";
 import Action from "@cocreate/actions";
 import elementPrototype from "@cocreate/element-prototype";
+import { formSelector } from "./formSelectors.js";
 
 /**
  * Initializes form elements. If no parameter is provided, or null is passed, it queries and initializes all form elements.
@@ -13,7 +14,7 @@ import elementPrototype from "@cocreate/element-prototype";
  *     - If an array of form elements is provided, each element in the array is initialized.
  */
 function init(elements) {
-    if (!elements) elements = document.querySelectorAll("form, fieldset");
+    if (!elements) elements = document.querySelectorAll(formSelector);
     else if (!Array.isArray(elements)) elements = [elements];
 
     for (let element of elements) {
@@ -242,7 +243,7 @@ function setValue(form) {
 Observer.init({
     name: "CoCreateForm",
     types: ["addedNodes"],
-    selector: "form, fieldset",
+    selector: formSelector,
     callback: (mutation) => init(mutation.target)
 });
 
@@ -258,7 +259,7 @@ Observer.init({
         "object",
         "index"
     ]),
-    selector: "form, fieldset",
+    selector: formSelector,
     callback: (mutation) => setAttribute(mutation.target, null, [mutation.attributeName])
 });
 

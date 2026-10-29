@@ -24,20 +24,146 @@
 import {
     getAttributes
 } from "@cocreate/utils";
+import Observer from "@cocreate/observer";
 import { init, initElement, initSocket } from "./initHandler.js";
 import { initDataKey, getDataKey, getDataElements, getDataKeys, getData, getDataObject } from "./getDataHandler.js";
 import { read, save } from "./crudHandler.js";
 import { setDataType, setData } from "./setDataHandler.js";
-import { reset } from "./formHandler.js";
 
 import "@cocreate/element-prototype";
-import "./dndHandler.js";
 import "./srcHandler.js";
-import "./socketHandler.js";
-import "./valueQuery.js";
-import "./iframeHandler.js";
+import {
+    socketActionSelector,
+    socketOnSelector,
+    socketStatusSelector
+} from "./socketSelectors.js";
+import { formSelector } from "./formSelectors.js";
+import { valueQuerySelector } from "./valueQuerySelector.js";
 
 import { elements, forms, keys, debounce } from "./mapRegistry.js"
+
+let socketHandlerLoading;
+let formHandlerLoading;
+let iframeHandlerLoading;
+let valueQueryHandlerLoading;
+const socketSelectors = [socketOnSelector, socketStatusSelector, socketActionSelector].join(", ");
+
+if (document.clickedElement === undefined) {
+    document.clickedElement = null;
+    document.addEventListener("click", event => {
+        document.clickedElement = event.target;
+    });
+}
+
+function loadIframeHandler() {
+    if (!iframeHandlerLoading) {
+        iframeHandlerLoading = import(/* webpackChunkName: "elements-iframe-handler" */ "./iframeHandler.js")
+            .catch(error => {
+                iframeHandlerLoading = undefined;
+                throw error;
+            });
+    }
+    iframeHandlerLoading.catch(error => console.error("CoCreate: unable to load iframe handler.", error));
+}
+
+function loadValueQueryHandler() {
+    if (!valueQueryHandlerLoading) {
+        valueQueryHandlerLoading = import(/* webpackChunkName: "elements-value-query" */ "./valueQuery.js")
+            .catch(error => {
+                valueQueryHandlerLoading = undefined;
+                throw error;
+            });
+    }
+    valueQueryHandlerLoading.catch(error => console.error("CoCreate: unable to load value query handler.", error));
+}
+
+function loadFormHandler() {
+    if (!formHandlerLoading) {
+        formHandlerLoading = import(/* webpackChunkName: "elements-form-handler" */ "./formHandler.js")
+            .catch(error => {
+                formHandlerLoading = undefined;
+                throw error;
+            });
+    }
+    return formHandlerLoading;
+}
+
+function initializeFormHandler() {
+    loadFormHandler().catch(error => console.error("CoCreate: unable to load form handler.", error));
+}
+
+function usesSocket(element) {
+    if (element.matches(socketOnSelector) || element.matches(socketStatusSelector)) return true;
+    return (element.getAttribute("actions") || "").split(",").some(action =>
+        action.trim().split("(", 1)[0].trim() === "send"
+    );
+}
+
+function loadSocketHandler(element) {
+    if (!usesSocket(element)) return;
+    if (!socketHandlerLoading) {
+        socketHandlerLoading = import(/* webpackChunkName: "elements-socket-handler" */ "./socketHandler.js")
+            .catch(error => {
+                socketHandlerLoading = undefined;
+                throw error;
+            });
+    }
+    socketHandlerLoading.catch(error => {
+        element.dispatchEvent(new CustomEvent("socketerror", {
+            bubbles: true, detail: { error, element }
+        }));
+    });
+}
+
+Observer.init([
+    {
+        name: "CoCreateElementsFormLoader",
+        types: ["addedNodes"],
+        selector: formSelector,
+        callback: initializeFormHandler
+    },
+    {
+        name: "CoCreateElementsSocketLoaderAddedNodes",
+        types: ["addedNodes"],
+        selector: socketSelectors,
+        callback: mutation => loadSocketHandler(mutation.target)
+    },
+    {
+        name: "CoCreateElementsSocketLoaderAttributes",
+        types: ["attributes"],
+        attributeFilter: ["socket-on", "socket-status", "actions"],
+        selector: socketSelectors,
+        callback: mutation => loadSocketHandler(mutation.target)
+    },
+    {
+        name: "CoCreateElementsIframeLoader",
+        types: ["addedNodes"],
+        selector: "iframe",
+        callback: loadIframeHandler
+    },
+    {
+        name: "CoCreateElementsValueQueryLoaderAddedNodes",
+        types: ["addedNodes"],
+        selector: valueQuerySelector,
+        callback: loadValueQueryHandler
+    },
+    {
+        name: "CoCreateElementsValueQueryLoaderAttributes",
+        types: ["attributes"],
+        attributeFilter: ["value-query"],
+        selector: valueQuerySelector,
+        callback: loadValueQueryHandler
+    }
+]);
+
+document.querySelectorAll(socketSelectors).forEach(loadSocketHandler);
+if (document.querySelector(formSelector)) initializeFormHandler();
+if (document.querySelector("iframe")) loadIframeHandler();
+if (document.querySelector(valueQuerySelector)) loadValueQueryHandler();
+
+export function reset(action) {
+    return loadFormHandler().then(module => module.reset(action));
+}
 
 export default {
     init,

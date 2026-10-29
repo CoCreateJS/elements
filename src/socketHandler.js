@@ -2,11 +2,10 @@ import Actions from "@cocreate/actions";
 import Observer from "@cocreate/observer";
 import Socket from "@cocreate/socket-client";
 import { dotNotationToObject, getValueFromObject, queryData, uuid } from "@cocreate/utils";
+import { socketOnSelector, socketStatusSelector } from "./socketSelectors.js";
 
-const socketOnSelector = "[socket-on]";
 const socketOnElements = new WeakMap();
 const socketOnListeners = new Map();
-const socketStatusSelector = "[socket-status]";
 const socketStatusElements = new Set();
 let socketStatusListenersInitialized = false;
 

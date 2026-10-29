@@ -1,8 +1,7 @@
 import Observer from "@cocreate/observer";
 import "@cocreate/element-prototype";
 import { queryElements } from "@cocreate/utils";
-
-const selector = "[value-query]";
+import { valueQuerySelector } from "./valueQuerySelector.js";
 
 /**
  * Initializes elements with value-* attributes to enable dynamic value retrieval and setting.
@@ -18,7 +17,7 @@ async function init(element) {
 	) {
 		element = [element];
 	} else if (!element) {
-		element = document.querySelectorAll(selector);
+		element = document.querySelectorAll(valueQuerySelector);
 	}
 
 	for (let i = 0; i < element.length; i++) {
@@ -87,7 +86,7 @@ init();
 Observer.init({
 	name: "CoCreateElementsValueAdded",
 	types: ["addedNodes"],
-	selector: selector,
+	selector: valueQuerySelector,
 	callback: function (mutation) {
 		init(mutation.target);
 	}
