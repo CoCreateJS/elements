@@ -25,13 +25,7 @@ import {
     getAttributes
 } from "@cocreate/utils";
 import Observer from "@cocreate/observer";
-import { init, initElement, initSocket } from "./initHandler.js";
-import { initDataKey, getDataKey, getDataElements, getDataKeys, getData, getDataObject } from "./getDataHandler.js";
-import { read, save } from "./crudHandler.js";
-import { setDataType, setData } from "./setDataHandler.js";
-
-import "@cocreate/element-prototype";
-import "./srcHandler.js";
+import { getDataObject } from "./dataObject.js";
 import {
     socketActionSelector,
     socketOnSelector,
@@ -42,6 +36,9 @@ import { valueQuerySelector } from "./valueQuerySelector.js";
 
 import { elements, forms, keys, debounce } from "./mapRegistry.js"
 
+let hrefHandlerLoading;
+let dataHandlerLoading;
+let srcHandlerLoading;
 let socketHandlerLoading;
 let formHandlerLoading;
 let iframeHandlerLoading;
@@ -53,6 +50,47 @@ if (document.clickedElement === undefined) {
     document.addEventListener("click", event => {
         document.clickedElement = event.target;
     });
+}
+
+const hrefSelector = "[href], [target]";
+const dataSelector = "[storage], [database], [array], [render-json]";
+const srcSelector = "img, [src], [source], [stream]";
+
+function loadHrefHandler() {
+    if (!hrefHandlerLoading) {
+        hrefHandlerLoading = import(/* webpackChunkName: "elements-href-handler" */ "./hrefHandler.js")
+            .catch(error => {
+                hrefHandlerLoading = undefined;
+                throw error;
+            });
+    }
+    hrefHandlerLoading.catch(error => console.error("CoCreate: unable to load href handler.", error));
+}
+
+function loadDataHandler() {
+    if (!dataHandlerLoading) {
+        dataHandlerLoading = import(/* webpackChunkName: "elements-data-handler" */ "./dataHandler.js")
+            .catch(error => {
+                dataHandlerLoading = undefined;
+                throw error;
+            });
+    }
+    return dataHandlerLoading;
+}
+
+function initializeDataHandler() {
+    loadDataHandler().catch(error => console.error("CoCreate: unable to load data handler.", error));
+}
+
+function loadSrcHandler() {
+    if (!srcHandlerLoading) {
+        srcHandlerLoading = import(/* webpackChunkName: "elements-src-handler" */ "./srcHandler.js")
+            .catch(error => {
+                srcHandlerLoading = undefined;
+                throw error;
+            });
+    }
+    srcHandlerLoading.catch(error => console.error("CoCreate: unable to load source handler.", error));
 }
 
 function loadIframeHandler() {
@@ -117,6 +155,58 @@ function loadSocketHandler(element) {
 
 Observer.init([
     {
+        name: "CoCreateElementsHrefLoaderAddedNodes",
+        types: ["addedNodes"],
+        selector: hrefSelector,
+        callback: loadHrefHandler
+    },
+    {
+        name: "CoCreateElementsHrefLoaderAttributes",
+        types: ["attributes"],
+        attributeFilter: ["href", "target"],
+        selector: hrefSelector,
+        callback: loadHrefHandler
+    },
+    {
+        name: "CoCreateElementsDataLoaderAddedNodes",
+        types: ["addedNodes"],
+        selector: dataSelector,
+        callback: initializeDataHandler
+    },
+    {
+        name: "CoCreateElementsDataLoaderAttributes",
+        types: ["attributes"],
+        attributeFilter: ["storage", "database", "array", "render-json"],
+        selector: dataSelector,
+        callback: initializeDataHandler
+    },
+    {
+        name: "CoCreateElementsSrcLoaderAddedNodes",
+        types: ["addedNodes"],
+        selector: srcSelector,
+        callback: loadSrcHandler
+    },
+    {
+        name: "CoCreateElementsSrcLoaderAttributes",
+        types: ["attributes"],
+        attributeFilter: ["src", "source", "stream"],
+        selector: srcSelector,
+        callback: loadSrcHandler
+    },
+    {
+        name: "CoCreateElementsActionLoaderAddedNodes",
+        types: ["addedNodes"],
+        selector: "[actions]",
+        callback: mutation => loadActionHandler(mutation.target)
+    },
+    {
+        name: "CoCreateElementsActionLoaderAttributes",
+        types: ["attributes"],
+        attributeFilter: ["actions"],
+        selector: "[actions]",
+        callback: mutation => loadActionHandler(mutation.target)
+    },
+    {
         name: "CoCreateElementsFormLoader",
         types: ["addedNodes"],
         selector: formSelector,
@@ -156,10 +246,32 @@ Observer.init([
     }
 ]);
 
+function loadActionHandler(element) {
+    const actions = (element.getAttribute("actions") || "").split(",");
+    for (const action of actions) {
+        const name = action.trim().split("(", 1)[0].trim();
+        if (name === "save" || name === "delete") initializeDataHandler();
+        if (name === "reset") initializeFormHandler();
+        if (name === "disableHref" || name === "enableHref") loadHrefHandler();
+    }
+}
+
+document.querySelectorAll("[actions]").forEach(loadActionHandler);
+if (document.querySelector(hrefSelector)) loadHrefHandler();
+if (document.querySelector(dataSelector)) initializeDataHandler();
+if (document.querySelector(srcSelector)) loadSrcHandler();
 document.querySelectorAll(socketSelectors).forEach(loadSocketHandler);
 if (document.querySelector(formSelector)) initializeFormHandler();
 if (document.querySelector("iframe")) loadIframeHandler();
 if (document.querySelector(valueQuerySelector)) loadValueQueryHandler();
+
+// Preserve the asynchronous public APIs while loading their implementation on demand.
+const callDataHandler = (name, args) => loadDataHandler().then(module => module[name](...args));
+const init = (...args) => callDataHandler("init", args);
+const read = (...args) => callDataHandler("read", args);
+const save = (...args) => callDataHandler("save", args);
+const getData = (...args) => callDataHandler("getData", args);
+const setDataType = (...args) => callDataHandler("setDataType", args);
 
 export function reset(action) {
     return loadFormHandler().then(module => module.reset(action));

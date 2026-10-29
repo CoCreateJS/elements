@@ -1,3 +1,4 @@
+import "@cocreate/element-prototype";
 import observer from "@cocreate/observer";
 import { getRelativePath, ObjectId } from "@cocreate/utils";
 

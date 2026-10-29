@@ -1,3 +1,4 @@
+import "@cocreate/element-prototype";
 import Actions from "@cocreate/actions";
 import Observer from "@cocreate/observer";
 import Socket from "@cocreate/socket-client";
