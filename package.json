@@ -15,6 +15,86 @@
   "publishConfig": {
     "access": "public"
   },
+  "cocreate": {
+    "environment": [
+      "client"
+    ],
+    "interface": {
+      "schemaVersion": 1,
+      "summary": "Fetch content into any html element by using html5 attributes to query data stored in CoCreate headless CMS. If data is changed it will instantly reflect in html tags as changes are broadcasted in realtime",
+      "source": "src/index.js",
+      "declarative": {
+        "selectors": [
+          "[actions]",
+          "iframe",
+          "[href], [target]",
+          "[storage], [database], [array], [render-json]",
+          "img, [src], [source], [stream]",
+          "[value-query]",
+          "form, fieldset",
+          "[socket-on]",
+          "[socket-status]"
+        ],
+        "attributes": [
+          {
+            "name": "actions"
+          },
+          {
+            "name": "array"
+          },
+          {
+            "name": "database"
+          },
+          {
+            "name": "href"
+          },
+          {
+            "name": "render-json"
+          },
+          {
+            "name": "socket-on"
+          },
+          {
+            "name": "socket-status"
+          },
+          {
+            "name": "source"
+          },
+          {
+            "name": "src"
+          },
+          {
+            "name": "storage"
+          },
+          {
+            "name": "stream"
+          },
+          {
+            "name": "target"
+          },
+          {
+            "name": "value-query"
+          }
+        ]
+      },
+      "api": {
+        "exports": [
+          "debounce",
+          "elements",
+          "forms",
+          "getAttributes",
+          "getData",
+          "getDataObject",
+          "init",
+          "keys",
+          "read",
+          "reset",
+          "save",
+          "setDataType"
+        ]
+      }
+    }
+  },
   "scripts": {
     "start": "webpack --config webpack.config.js",
     "build": "webpack --mode=production --config webpack.config.js",
