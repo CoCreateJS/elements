@@ -107,9 +107,9 @@
   "author": "CoCreate LLC",
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/CoCreate-app/CoCreate-elements/issues"
+    "url": "https://github.com/CoCreateJS/CoCreate-elements/issues"
   },
-  "homepage": "https://cocreate.app/docs/elements",
+  "homepage": "https://CoCreateJS.com/docs/elements",
   "funding": {
     "type": "GitHub Sponsors ❤",
     "url": "https://github.com/sponsors/CoCreate-app"
