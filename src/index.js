@@ -267,12 +267,42 @@ if (document.querySelector(valueQuerySelector)) loadValueQueryHandler();
 
 // Preserve the asynchronous public APIs while loading their implementation on demand.
 const callDataHandler = (name, args) => loadDataHandler().then(module => module[name](...args));
+/**
+ *
+ * @public
+ * @environment client
+ */
 const init = (...args) => callDataHandler("init", args);
+/**
+ *
+ * @public
+ * @environment client
+ */
 const read = (...args) => callDataHandler("read", args);
+/**
+ *
+ * @public
+ * @environment client
+ */
 const save = (...args) => callDataHandler("save", args);
+/**
+ *
+ * @public
+ * @environment client
+ */
 const getData = (...args) => callDataHandler("getData", args);
+/**
+ *
+ * @public
+ * @environment client
+ */
 const setDataType = (...args) => callDataHandler("setDataType", args);
 
+/**
+ *
+ * @public
+ * @environment client
+ */
 export function reset(action) {
     return loadFormHandler().then(module => module.reset(action));
 }
@@ -282,12 +312,176 @@ export default {
     read,
     save,
     getData,
+    /**
+     *
+ * @public
+ * @environment client
+ */
     getDataObject,
     reset,
+    /**
+     *
+ * @public
+ * @environment client
+ */
     elements,
+    /**
+     *
+ * @public
+ * @environment client
+ */
     keys,
+    /**
+     *
+ * @public
+ * @environment client
+ */
     forms,
+    /**
+     *
+ * @public
+ * @environment client
+ */
     debounce,
+    /**
+     *
+ * @public
+ * @environment client
+ */
     getAttributes,
     setDataType
 };
+
+/**
+ *
+ * @name actions
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name array
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name database
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name href
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name render-json
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name socket-on
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name socket-status
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name source
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name src
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name storage
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name stream
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name target
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name value-query
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ * Fetch content into any html element by using html5 attributes to query data stored in CoCreate headless CMS. If data is changed it will instantly reflect in html tags as changes are broadcasted in realtime
+ *
+ * @module elements
+ * @environment client
+ */
+
+/**
+ * Declarative selectors recognized by this module.
+ *
+ * @name declarative-selectors
+ * @kind member
+ * @selectors
+ * @environment client
+ * @example
+ * ```json
+ * [
+ *   "[actions]",
+ *   "iframe",
+ *   "[href], [target]",
+ *   "[storage], [database], [array], [render-json]",
+ *   "img, [src], [source], [stream]",
+ *   "[value-query]",
+ *   "form, fieldset",
+ *   "[socket-on]",
+ *   "[socket-status]"
+ * ]
+ * ```
+ */
