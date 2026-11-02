@@ -1,3 +1,44 @@
+# [1.44.0](https://github.com/CoCreateJS/elements/compare/v1.43.2...v1.44.0) (2026-11-02)
+
+
+### Bug Fixes
+
+* add Deno specific entries to .gitignore ([2ca9e3f](https://github.com/CoCreateJS/elements/commit/2ca9e3f81a39d6a433a6a3681d41ff7ef4c103f7))
+* add getAttributes import from @cocreate/utils in index.js ([894dede](https://github.com/CoCreateJS/elements/commit/894dede2fee7df8e9b97bb8d5be3ee29e6c90819))
+* add Observer import to dndHandler.js ([3115270](https://github.com/CoCreateJS/elements/commit/3115270d1d8174e6b3f60ca328439dcd58a16049))
+* align socket synchronization by frame ([e1d25cb](https://github.com/CoCreateJS/elements/commit/e1d25cba0f98f93ff31eb77dbaca36b9805f8906))
+* bump [@cocreate](https://github.com/cocreate) dependencies ([67fb9ef](https://github.com/CoCreateJS/elements/commit/67fb9ef207fb86880e4dbeaae26ee4b53d063970))
+* bump [@cocreate](https://github.com/cocreate) package versions ([d97d412](https://github.com/CoCreateJS/elements/commit/d97d412d6e4d4740bb5a20d8371a79bed89dba62))
+* bump versions ([57dd2f0](https://github.com/CoCreateJS/elements/commit/57dd2f0e2951fdf3de801e47cb7ba1bfae2ab0e5))
+* bump versions ([4d6dee3](https://github.com/CoCreateJS/elements/commit/4d6dee3ebe635c3a1aacd761d83b5738fbc663e6))
+* enhance error handling in save and socket functions ([1aa0f41](https://github.com/CoCreateJS/elements/commit/1aa0f416d822c2560ffc96961163aba06828e7c7))
+* import setDataType for CRUD saves ([fc64a7c](https://github.com/CoCreateJS/elements/commit/fc64a7c7a2a9eb49b604dc15e116ec5d718fb51a))
+* improve synchronized element updates ([eb6d9b8](https://github.com/CoCreateJS/elements/commit/eb6d9b8caa656cb04f418558f4371636559a3fae))
+* process state-driven source changes ([4d9909d](https://github.com/CoCreateJS/elements/commit/4d9909dbb982420117a9a86ac3605d46b9598b46))
+* remove redundant check for existing source initialization ([b1b136b](https://github.com/CoCreateJS/elements/commit/b1b136b18842490d6aec6de66a514df0acf8aac0))
+* remove trailing slash from node_modules entry in .gitignore ([ada5926](https://github.com/CoCreateJS/elements/commit/ada5926dc0761f60cd2d7976468eb200fddcbc2c))
+* rename setTypeValue to setDataType for clarity in save function ([b1df3d5](https://github.com/CoCreateJS/elements/commit/b1df3d5e7b53de9b42696f56ea095c5ff31485ad))
+* replace legacy $filter field with filter ([701f12f](https://github.com/CoCreateJS/elements/commit/701f12f8fba55af29675d042cbc9d20edb618323))
+* stabilize batched reads and filter lookup ([a0eac12](https://github.com/CoCreateJS/elements/commit/a0eac12ae07709cf44e7c6815db269bf4c8ac758))
+* update git url ([3870f71](https://github.com/CoCreateJS/elements/commit/3870f718362046646bfb961fa44a4c9ab1adfa06))
+* update GitHub Actions to use latest versions and sync package.json description ([13b16c6](https://github.com/CoCreateJS/elements/commit/13b16c68a17bfd595e1a9d114d90412d0765b948))
+
+
+### Features
+
+* add element subscription tracking ([3c47af6](https://github.com/CoCreateJS/elements/commit/3c47af6cecaef56b4fc0d23952f385beee8f4377))
+* Add initHandler, mapRegistry, setDataHandler, srcHandler, and valueQuery modules ([5eec0b4](https://github.com/CoCreateJS/elements/commit/5eec0b46b286431b785d62ae0476c6c78dc2f369))
+* add socket handling and data guards ([be267d8](https://github.com/CoCreateJS/elements/commit/be267d8392210fe93cea322e382c2c9a5c7a20b9))
+* add subscription and unsubscription functions to handle socket communication ([9f2049d](https://github.com/CoCreateJS/elements/commit/9f2049d2e82adab56830e794b6cf6712a55cc44a))
+* enhance getDataHandler with subscription support and improve data handling logic ([12b06ec](https://github.com/CoCreateJS/elements/commit/12b06ec29421fff11433f36b278df666bc6636d5))
+* enhance initHandler with unsubscribe functionality and improve element removal logic ([087b8df](https://github.com/CoCreateJS/elements/commit/087b8dfd707f0eb78da667d3dca895682380bb9b))
+* enhance read and save functions with subscription key handling and improve data processing logic ([0fb7dd2](https://github.com/CoCreateJS/elements/commit/0fb7dd2a771d3f3c62bc2baa09825bb32e1f3abe))
+* expand declarative socket handling ([a911d2e](https://github.com/CoCreateJS/elements/commit/a911d2e1f125841e77e3d6bc1f81c57ec92cd4ac))
+* handle iframe source updates in elements ([90f29d8](https://github.com/CoCreateJS/elements/commit/90f29d8aa21fb90f837d748af600d66c274dc76f))
+* refactor subscription handling by consolidating functions into subscribeHandler and removing deprecated subscriptionHandler ([2c2c0e0](https://github.com/CoCreateJS/elements/commit/2c2c0e057bd44171b2b08ec6a9dbcb03e35bbd9e))
+* replace uuid import and usage with utils ([effcb9b](https://github.com/CoCreateJS/elements/commit/effcb9beffea575a9bf96b256a51606ea2a45468))
+* support queried saves and external form controls ([a64cd63](https://github.com/CoCreateJS/elements/commit/a64cd636f43235efa3b4b10b2220383d9ed711da))
+
 ## [1.43.2](https://github.com/CoCreateJS/CoCreate-elements/compare/v1.43.1...v1.43.2) (2026-07-19)
 
 
