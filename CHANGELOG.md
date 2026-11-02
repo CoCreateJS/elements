@@ -1,3 +1,15 @@
+# [2.0.0](https://github.com/CoCreateJS/elements/compare/v1.44.0...v2.0.0) (2026-11-02)
+
+
+### chore
+
+* record package identity migration as breaking ([c50d2ed](https://github.com/CoCreateJS/elements/commit/c50d2edfa728748ec259cf40c48b282dda16bf63))
+
+
+### BREAKING CHANGES
+
+* Consumers must install @cocreate/elements and use the renamed CoCreateJS repository identity; the previous package and repository identities are no longer supported.
+
 # [1.44.0](https://github.com/CoCreateJS/elements/compare/v1.43.2...v1.44.0) (2026-11-02)
 
 
