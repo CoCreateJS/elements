@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/CoCreateJS/elements/compare/v2.0.0...v2.0.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* upgrade CoCreate dependencies to v2 ([8a9adb0](https://github.com/CoCreateJS/elements/commit/8a9adb0bede1f3dfaf1bcd8dcb1dbbd6f3cdfa12))
+
 # [2.0.0](https://github.com/CoCreateJS/elements/compare/v1.44.0...v2.0.0) (2026-11-02)
 
 
