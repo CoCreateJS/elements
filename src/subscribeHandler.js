@@ -1,4 +1,4 @@
-import socket from "@cocreate/socket-client";
+import { SocketClient as socket } from "@cocreate/socket";
 
 /**
  * Canonical scope attributes included in socket server subscription channel keys.

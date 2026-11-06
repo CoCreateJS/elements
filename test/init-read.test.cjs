@@ -18,7 +18,7 @@ async function setup() {
     const stubs = {
         '@cocreate/observer': { default: { init(options) { observers.push(options); } } },
         '@cocreate/actions': { default: { init() {} } },
-        '@cocreate/socket-client': { default: { send() {} } },
+        '@cocreate/socket': { SocketClient: { send() {} } },
         '@cocreate/crud-client': { default: { listen() {}, send: async (data) => { requests.push(data); } } },
         '@cocreate/filter': { default: { init: async (element) => { if (element.ready) await element.ready; } } },
         '@cocreate/utils': {

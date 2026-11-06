@@ -1,7 +1,7 @@
 import "@cocreate/element-prototype";
 import Actions from "@cocreate/actions";
 import Observer from "@cocreate/observer";
-import Socket from "@cocreate/socket-client";
+import { SocketClient as Socket } from "@cocreate/socket";
 import { dotNotationToObject, getValueFromObject, queryData, uuid } from "@cocreate/utils";
 import { socketOnSelector, socketStatusSelector } from "./socketSelectors.js";
 
