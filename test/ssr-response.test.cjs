@@ -17,7 +17,7 @@ async function loadSetData() {
     };
     const modules = {
         '@cocreate/utils': utils,
-        '@cocreate/crud-client': { default: { getValueFromObject: (object, key) => object[key] } },
+        '@cocreate/crud/client': { crudClient: { getValueFromObject: (object, key) => object[key] } },
         '@cocreate/filter': { default: { filters: new Map() } },
         './mapRegistry.js': { elements: new WeakMap(), forms: new WeakMap(), keys: new Map() },
         './getDataHandler.js': { getDataElements: () => [], getDataObject: element => ({ object: element.getAttribute('object') }) }

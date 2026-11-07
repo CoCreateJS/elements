@@ -30,7 +30,7 @@ async function loadSetDataType(watchedElements = []) {
             checkValue: () => true,
             getValueFromObject: () => undefined
         },
-        "@cocreate/crud-client": { default: { getValueFromObject: (object, key) => object[key] } },
+        "@cocreate/crud/client": { crudClient: { getValueFromObject: (object, key) => object[key] } },
         "@cocreate/filter": { default: { filters: new Map() } },
         "./mapRegistry.js": {
             elements: new WeakMap(),

@@ -4,7 +4,7 @@ import {
     checkValue
 } from "@cocreate/utils";
 import Actions from "@cocreate/actions";
-import CRUD from "@cocreate/crud-client";
+import { crudClient as CRUD } from '@cocreate/crud/client';
 
 import { elements, keys, debounce } from "./mapRegistry.js";
 import { getDataObject } from "./getDataHandler.js";

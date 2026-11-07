@@ -7,7 +7,7 @@ import {
     checkValue,
     getValueFromObject
 } from "@cocreate/utils";
-import CRUD from "@cocreate/crud-client";
+import { crudClient as CRUD } from '@cocreate/crud/client';
 import filter from "@cocreate/filter";
 import { elements, forms, keys } from "./mapRegistry.js";
 import { getDataElements, getDataObject } from "./getDataHandler.js";

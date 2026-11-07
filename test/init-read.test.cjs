@@ -19,7 +19,7 @@ async function setup() {
         '@cocreate/observer': { default: { init(options) { observers.push(options); } } },
         '@cocreate/actions': { default: { init() {} } },
         '@cocreate/socket': { SocketClient: { send() {} } },
-        '@cocreate/crud-client': { default: { listen() {}, send: async (data) => { requests.push(data); } } },
+        '@cocreate/crud/client': { crudClient: { listen() {}, send: async (data) => { requests.push(data); } } },
         '@cocreate/filter': { default: { init: async (element) => { if (element.ready) await element.ready; } } },
         '@cocreate/utils': {
             getAttributes: (element) => ({ ...element.data }),

@@ -1,5 +1,5 @@
 import Observer from "@cocreate/observer";
-import CRUD from "@cocreate/crud-client";
+import { crudClient as CRUD } from '@cocreate/crud/client';
 import filter from "@cocreate/filter";
 
 import { getAttributes } from "@cocreate/utils";
